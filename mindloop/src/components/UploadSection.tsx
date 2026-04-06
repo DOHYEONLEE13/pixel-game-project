@@ -9,7 +9,8 @@ const HERO_VIDEO_URL =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_120549_0cd82c36-56b3-4dd9-b190-069cfc3a623f.mp4";
 
 const ALLOWED_EXTENSIONS = [".html", ".htm", ".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".mp3", ".wav", ".ogg", ".json"];
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total
 
 const categoryMap: Record<string, string> = {
   "액션": "action",
@@ -45,12 +46,32 @@ function scanHtmlFile(content: string): string[] {
   if (/document\.cookie/i.test(content)) {
     warnings.push("document.cookie 접근이 감지되었습니다");
   }
-  if (/\beval\s*\(/i.test(content)) {
-    warnings.push("eval() 사용이 감지되었습니다");
+  if (/\beval\s*\(/.test(content) || /\bnew\s+Function\s*\(/.test(content)) {
+    warnings.push("eval() 또는 new Function() 사용이 감지되었습니다");
   }
   // window.location 감지 (단, hash는 허용)
   if (/window\.location(?!\.hash)/i.test(content)) {
     warnings.push("외부 리다이렉트(window.location)가 감지되었습니다");
+  }
+  // 외부 도메인 fetch/XHR 감지 (CDN 허용 목록 제외)
+  const cdnAllowList = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com", "unpkg.com", "fonts.googleapis.com", "fonts.gstatic.com"];
+  const urlPattern = /(?:fetch|XMLHttpRequest|\.open)\s*\(\s*['"`](https?:\/\/[^'"`\s]+)/gi;
+  let match;
+  while ((match = urlPattern.exec(content)) !== null) {
+    const url = match[1];
+    const isAllowed = cdnAllowList.some((cdn) => url.includes(cdn));
+    if (!isAllowed) {
+      warnings.push(`외부 네트워크 요청 감지: ${url.slice(0, 60)}`);
+      break;
+    }
+  }
+  // localStorage/sessionStorage 접근 감지
+  if (/\b(localStorage|sessionStorage)\s*\./.test(content)) {
+    warnings.push("localStorage/sessionStorage 접근이 감지되었습니다");
+  }
+  // parent.postMessage 감지 (iframe 탈출 시도)
+  if (/parent\s*\.\s*postMessage|top\s*\.\s*postMessage|window\s*\.\s*parent/i.test(content)) {
+    warnings.push("iframe 외부 통신(postMessage) 시도가 감지되었습니다");
   }
   return warnings;
 }
@@ -91,7 +112,7 @@ export default function UploadSection() {
         return false;
       }
       if (f.size > MAX_FILE_SIZE) {
-        toast(`파일이 너무 큽니다: ${f.name} (최대 50MB)`, "error");
+        toast(`파일이 너무 큽니다: ${f.name} (개별 최대 10MB)`, "error");
         return false;
       }
       return true;
@@ -113,10 +134,15 @@ export default function UploadSection() {
       }
     });
 
-    setForm((prev) => ({
-      ...prev,
-      files: [...prev.files, ...valid.filter((f) => !prev.files.some((ef) => ef.name === f.name))],
-    }));
+    setForm((prev) => {
+      const merged = [...prev.files, ...valid.filter((f) => !prev.files.some((ef) => ef.name === f.name))];
+      const totalSize = merged.reduce((sum, f) => sum + f.size, 0);
+      if (totalSize > MAX_TOTAL_SIZE) {
+        toast("전체 파일 크기가 50MB를 초과합니다", "error");
+        return prev;
+      }
+      return { ...prev, files: merged };
+    });
   }, [toast]);
 
   const removeFile = (name: string) => {
@@ -212,20 +238,22 @@ export default function UploadSection() {
         .map((t) => t.trim())
         .filter(Boolean);
 
-      // 7. Insert game metadata
-      const { error: dbError } = await supabase.from("games").insert({
-        id: gameId,
-        title: form.title.trim(),
-        description: form.description.trim() || null,
-        category: categoryMap[form.category] || "casual",
-        type: form.type,
-        playtime: form.playtime.trim() || null,
-        tags: tags.length > 0 ? tags : null,
-        html_url: htmlUrlData.publicUrl,
-        thumbnail_url: thumbnailUrl,
-        file_paths: filePaths,
-        entry_file: entryFile,
-        status: "live",
+      // 7. Insert game metadata via admin RPC (server-side token verification)
+      const adminToken = localStorage.getItem("playwave_admin_token") || "";
+      const { error: dbError } = await supabase.rpc("admin_insert_game", {
+        admin_token: adminToken,
+        game_id: gameId,
+        game_title: form.title.trim(),
+        game_description: form.description.trim() || null,
+        game_category: categoryMap[form.category] || "casual",
+        game_type: form.type,
+        game_playtime: form.playtime.trim() || null,
+        game_tags: tags.length > 0 ? tags : null,
+        game_html_url: htmlUrlData.publicUrl,
+        game_thumbnail_url: thumbnailUrl,
+        game_file_paths: filePaths,
+        game_entry_file: entryFile,
+        game_status: "live",
       });
 
       if (dbError) throw new Error(`게임 등록 실패: ${dbError.message}`);
@@ -562,7 +590,7 @@ export default function UploadSection() {
             </motion.button>
 
             <p className="text-center text-muted-foreground/50 text-xs mt-4">
-              최대 50MB · HTML 파일 필수 · 업로드 즉시 게임 피드에 등록됩니다
+              개별 10MB · 전체 50MB · HTML 파일 필수 · 업로드 즉시 게임 피드에 등록됩니다
             </p>
           </motion.div>
         </div>

@@ -3,6 +3,9 @@
 -- Supabase SQL Editor에서 실행하세요
 -- ============================================
 
+-- pgcrypto 확장 (HMAC 서명에 필요)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- 1. games 테이블
 CREATE TABLE IF NOT EXISTS games (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -59,10 +62,10 @@ CREATE TABLE IF NOT EXISTS play_history (
 -- RLS (Row Level Security) 정책
 -- ============================================
 
--- games: 누구나 live 게임 읽기 가능
+-- games: 누구나 live 게임 읽기 가능, insert/update/delete는 RLS로 차단
+-- 관리자 작업은 SECURITY DEFINER 함수를 통해서만 수행
 ALTER TABLE games ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "games_public_read" ON games FOR SELECT USING (status = 'live');
-CREATE POLICY "games_admin_all" ON games FOR ALL USING (true) WITH CHECK (true);
 
 -- profiles
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -92,14 +95,63 @@ CREATE POLICY "history_own_update" ON play_history FOR UPDATE USING (auth.uid() 
 -- RPC 함수들
 -- ============================================
 
--- 관리자 비밀번호 검증
+-- 관리자 비밀번호 검증 → 성공 시 HMAC 서명된 토큰 반환
+-- 비밀번호가 틀리면 빈 문자열 반환
 CREATE OR REPLACE FUNCTION verify_admin_password(password_input text)
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  token_payload text;
+  hmac_sig text;
+BEGIN
+  IF password_input <> 'playwave2026' THEN
+    RETURN '';
+  END IF;
+  -- payload: admin + 만료시각(24h)
+  token_payload := 'admin:' || extract(epoch from now() + interval '24 hours')::bigint::text;
+  -- HMAC-SHA256 서명 (pgcrypto 필요)
+  hmac_sig := encode(
+    hmac(token_payload::bytea, 'playwave_hmac_secret_2026'::bytea, 'sha256'),
+    'hex'
+  );
+  RETURN token_payload || '.' || hmac_sig;
+END;
+$$;
+
+-- 관리자 토큰 검증 (클라이언트가 저장한 토큰을 서버에서 확인)
+CREATE OR REPLACE FUNCTION verify_admin_token(token_input text)
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+  parts text[];
+  payload text;
+  sig text;
+  expected_sig text;
+  expiry_epoch bigint;
 BEGIN
-  RETURN password_input = 'playwave2026';
+  -- 토큰 형식: "admin:<epoch>.<hmac_hex>"
+  parts := string_to_array(token_input, '.');
+  IF array_length(parts, 1) <> 2 THEN RETURN false; END IF;
+
+  payload := parts[1];
+  sig := parts[2];
+
+  -- HMAC 검증
+  expected_sig := encode(
+    hmac(payload::bytea, 'playwave_hmac_secret_2026'::bytea, 'sha256'),
+    'hex'
+  );
+  IF sig <> expected_sig THEN RETURN false; END IF;
+
+  -- 만료 검증
+  expiry_epoch := split_part(payload, ':', 2)::bigint;
+  IF extract(epoch from now()) > expiry_epoch THEN RETURN false; END IF;
+
+  RETURN true;
 END;
 $$;
 
@@ -156,6 +208,82 @@ $$;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- ============================================
+-- 관리자 전용 게임 CRUD (SECURITY DEFINER — RLS 우회)
+-- 클라이언트는 이 함수들을 통해서만 games를 변경할 수 있음
+-- ============================================
+
+-- 게임 등록 (관리자 토큰 필수)
+CREATE OR REPLACE FUNCTION admin_insert_game(
+  admin_token text,
+  game_id uuid,
+  game_title text,
+  game_description text,
+  game_category text,
+  game_type text,
+  game_playtime text,
+  game_tags text[],
+  game_html_url text,
+  game_thumbnail_url text,
+  game_file_paths text[],
+  game_entry_file text,
+  game_status text DEFAULT 'live'
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT verify_admin_token(admin_token) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  INSERT INTO games (id, title, description, category, type, playtime, tags, html_url, thumbnail_url, file_paths, entry_file, status)
+  VALUES (game_id, game_title, game_description, game_category, game_type, game_playtime, game_tags, game_html_url, game_thumbnail_url, game_file_paths, game_entry_file, game_status);
+END;
+$$;
+
+-- 게임 상태 토글 (관리자 토큰 필수)
+CREATE OR REPLACE FUNCTION admin_update_game_status(admin_token text, target_game_id uuid, new_status text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT verify_admin_token(admin_token) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  UPDATE games SET status = new_status WHERE id = target_game_id;
+END;
+$$;
+
+-- 게임 삭제 (관리자 토큰 필수)
+CREATE OR REPLACE FUNCTION admin_delete_game(admin_token text, target_game_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT verify_admin_token(admin_token) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  DELETE FROM games WHERE id = target_game_id;
+END;
+$$;
+
+-- 관리자 전용: 모든 게임 조회 (draft 포함)
+CREATE OR REPLACE FUNCTION admin_list_games(admin_token text)
+RETURNS SETOF games
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT verify_admin_token(admin_token) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  RETURN QUERY SELECT * FROM games ORDER BY created_at DESC;
+END;
+$$;
 
 -- ============================================
 -- Storage 버킷

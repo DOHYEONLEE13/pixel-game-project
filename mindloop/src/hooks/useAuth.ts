@@ -12,15 +12,31 @@ interface AuthState {
 }
 
 const ADMIN_TOKEN_KEY = "playwave_admin_token";
-const ADMIN_EXPIRY_KEY = "playwave_admin_expiry";
 
-function checkAdminToken(): boolean {
+/** Check admin token against the server (HMAC verification) */
+async function verifyAdminToken(): Promise<boolean> {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-  const expiry = localStorage.getItem(ADMIN_EXPIRY_KEY);
-  if (!token || !expiry) return false;
-  if (Date.now() > Number(expiry)) {
+  if (!token) return false;
+
+  // Quick client-side expiry check to avoid unnecessary RPC calls
+  try {
+    const payload = token.split(".")[0];
+    const expiry = Number(payload.split(":")[1]);
+    if (Date.now() / 1000 > expiry) {
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      return false;
+    }
+  } catch {
     localStorage.removeItem(ADMIN_TOKEN_KEY);
-    localStorage.removeItem(ADMIN_EXPIRY_KEY);
+    return false;
+  }
+
+  // Server-side HMAC verification
+  const { data, error } = await supabase.rpc("verify_admin_token", {
+    token_input: token,
+  });
+  if (error || !data) {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
     return false;
   }
   return true;
@@ -31,7 +47,7 @@ export function useAuth() {
     user: null,
     profile: null,
     session: null,
-    isAdmin: checkAdminToken(),
+    isAdmin: false,
     loading: true,
   });
 
@@ -47,20 +63,35 @@ export function useAuth() {
 
   // Listen to auth state changes
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    let cancelled = false;
+
+    const init = async () => {
+      // Check admin token (server-verified)
+      const adminValid = await verifyAdminToken();
+
+      // Get initial session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (cancelled) return;
+
       let profile: Profile | null = null;
       if (session?.user) {
         profile = await fetchProfile(session.user.id);
       }
-      setState((prev) => ({
-        ...prev,
+
+      if (cancelled) return;
+      setState({
         user: session?.user ?? null,
         session,
         profile,
+        isAdmin: adminValid,
         loading: false,
-      }));
-    });
+      });
+    };
+
+    init();
 
     // Subscribe to changes
     const {
@@ -79,7 +110,10 @@ export function useAuth() {
       }));
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [fetchProfile]);
 
   // Sign up
@@ -117,7 +151,7 @@ export function useAuth() {
     }));
   }, []);
 
-  // Admin login via RPC
+  // Admin login via RPC — returns HMAC-signed token
   const adminLogin = useCallback(async (password: string) => {
     const { data, error } = await supabase.rpc("verify_admin_password", {
       password_input: password,
@@ -125,17 +159,17 @@ export function useAuth() {
     if (error) throw error;
     if (!data) throw new Error("비밀번호가 올바르지 않습니다");
 
-    // Store token with 24h expiry
-    const expiry = Date.now() + 24 * 60 * 60 * 1000;
-    localStorage.setItem(ADMIN_TOKEN_KEY, "admin_authenticated");
-    localStorage.setItem(ADMIN_EXPIRY_KEY, String(expiry));
+    // data is now the HMAC token string (empty string = wrong password)
+    const token = data as string;
+    if (!token) throw new Error("비밀번호가 올바르지 않습니다");
+
+    localStorage.setItem(ADMIN_TOKEN_KEY, token);
     setState((prev) => ({ ...prev, isAdmin: true }));
   }, []);
 
   // Admin logout
   const adminLogout = useCallback(() => {
     localStorage.removeItem(ADMIN_TOKEN_KEY);
-    localStorage.removeItem(ADMIN_EXPIRY_KEY);
     setState((prev) => ({ ...prev, isAdmin: false }));
   }, []);
 

@@ -1,6 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuthContext } from "@/contexts/AuthContext";
+
+// Debounce map: key → last action timestamp
+const actionTimestamps = new Map<string, number>();
+const DEBOUNCE_MS = 1000; // 1 second debounce for like/save
+
+function isDebounced(key: string): boolean {
+  const last = actionTimestamps.get(key);
+  if (last && Date.now() - last < DEBOUNCE_MS) return true;
+  actionTimestamps.set(key, Date.now());
+  return false;
+}
 
 export function useGameInteractions(gameId: string | null) {
   const { user } = useAuthContext();
@@ -8,6 +19,7 @@ export function useGameInteractions(gameId: string | null) {
   const [saved, setSaved] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const viewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Check if user has liked/saved this game
   useEffect(() => {
@@ -36,6 +48,7 @@ export function useGameInteractions(gameId: string | null) {
 
   const toggleLike = useCallback(async () => {
     if (!user || !gameId || likeLoading) return false;
+    if (isDebounced(`like:${user.id}:${gameId}`)) return false;
     setLikeLoading(true);
 
     if (liked) {
@@ -58,6 +71,7 @@ export function useGameInteractions(gameId: string | null) {
 
   const toggleSave = useCallback(async () => {
     if (!user || !gameId || saveLoading) return false;
+    if (isDebounced(`save:${user.id}:${gameId}`)) return false;
     setSaveLoading(true);
 
     if (saved) {
@@ -81,10 +95,17 @@ export function useGameInteractions(gameId: string | null) {
   const incrementViews = useCallback(async () => {
     if (!gameId) return;
 
-    // Session-based dedup for guests
+    // Session-based dedup for guests (same game, same session)
     const viewKey = `viewed_${gameId}`;
     if (sessionStorage.getItem(viewKey)) return;
+
+    // 5-minute dedup: store timestamp
+    const viewTimeKey = `viewtime_${gameId}`;
+    const lastViewTime = sessionStorage.getItem(viewTimeKey);
+    if (lastViewTime && Date.now() - Number(lastViewTime) < 5 * 60 * 1000) return;
+
     sessionStorage.setItem(viewKey, "1");
+    sessionStorage.setItem(viewTimeKey, String(Date.now()));
 
     await supabase.rpc("increment_views", { game_id_input: gameId });
   }, [gameId]);
@@ -113,6 +134,13 @@ export function useGameInteractions(gameId: string | null) {
         .insert({ user_id: user.id, game_id: gameId });
     }
   }, [user, gameId]);
+
+  // Cleanup view timer on unmount
+  useEffect(() => {
+    return () => {
+      if (viewTimerRef.current) clearTimeout(viewTimerRef.current);
+    };
+  }, []);
 
   return { liked, saved, toggleLike, toggleSave, incrementViews, recordPlay };
 }

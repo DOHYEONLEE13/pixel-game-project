@@ -100,6 +100,10 @@ export interface Database {
     Functions: {
       verify_admin_password: {
         Args: { password_input: string };
+        Returns: string;
+      };
+      verify_admin_token: {
+        Args: { token_input: string };
         Returns: boolean;
       };
       increment_views: {

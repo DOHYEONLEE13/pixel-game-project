@@ -29,12 +29,19 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats>({ total: 0, totalViews: 0, shortform: 0, longform: 0 });
   const [loading, setLoading] = useState(true);
 
+  const getAdminToken = () => localStorage.getItem("playwave_admin_token") || "";
+
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("games")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data, error } = await supabase.rpc("admin_list_games", {
+      admin_token: getAdminToken(),
+    });
+
+    if (error) {
+      toast("게임 목록 로딩 실패", "error");
+      setLoading(false);
+      return;
+    }
 
     const all = (data || []) as Game[];
     setGames(all);
@@ -45,7 +52,7 @@ export default function AdminPage() {
       longform: all.filter((g) => g.type === "longform").length,
     });
     setLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -57,7 +64,15 @@ export default function AdminPage() {
 
   const toggleStatus = async (game: Game) => {
     const newStatus = game.status === "live" ? "draft" : "live";
-    await supabase.from("games").update({ status: newStatus }).eq("id", game.id);
+    const { error } = await supabase.rpc("admin_update_game_status", {
+      admin_token: getAdminToken(),
+      target_game_id: game.id,
+      new_status: newStatus,
+    });
+    if (error) {
+      toast("상태 변경 실패: " + error.message, "error");
+      return;
+    }
     toast(newStatus === "live" ? `${game.title} 게시됨` : `${game.title} 숨김 처리`, "success");
     fetchData();
   };
@@ -70,8 +85,15 @@ export default function AdminPage() {
       await supabase.storage.from("games").remove(game.file_paths);
     }
 
-    // Delete DB record
-    await supabase.from("games").delete().eq("id", game.id);
+    // Delete DB record via admin RPC
+    const { error } = await supabase.rpc("admin_delete_game", {
+      admin_token: getAdminToken(),
+      target_game_id: game.id,
+    });
+    if (error) {
+      toast("삭제 실패: " + error.message, "error");
+      return;
+    }
     toast("삭제 완료", "success");
     fetchData();
   };
