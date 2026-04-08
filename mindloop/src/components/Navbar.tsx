@@ -49,7 +49,7 @@ const socialIcons = [InstagramIcon, LinkedinIcon, TwitterIcon];
 
 export default function Navbar() {
   const location = useLocation();
-  const { user, profile, isAdmin, signOut, adminLogout, loading } = useAuthContext();
+  const { user, isAdmin, logout, loading } = useAuthContext();
   const { toast } = useToast();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -66,7 +66,7 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [dropdownOpen]);
 
-  const displayName = profile?.nickname || user?.email?.split("@")[0] || "User";
+  const displayName = user?.username || "User";
   const avatarLetter = displayName.charAt(0).toUpperCase();
 
   return (
@@ -128,7 +128,7 @@ export default function Navbar() {
           {/* Auth area */}
           {loading ? (
             <div className="w-10 h-10 rounded-full bg-secondary/50 animate-pulse" />
-          ) : user || isAdmin ? (
+          ) : user ? (
             /* Avatar dropdown */
             <div className="relative" ref={dropdownRef}>
               <button
@@ -136,20 +136,13 @@ export default function Navbar() {
                 className="flex items-center gap-2 pl-3 pr-1 py-1 rounded-full hover:bg-white/5 transition-colors"
               >
                 <span className="text-sm text-muted-foreground hidden sm:block">
-                  {isAdmin && !user ? "관리자" : displayName}
+                  {displayName}
                 </span>
-                <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm">
-                  {isAdmin && !user ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    </svg>
-                  ) : (
-                    avatarLetter
-                  )}
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm ${isAdmin ? "bg-accent text-accent-foreground" : "bg-foreground text-background"}`}>
+                  {avatarLetter}
                 </div>
               </button>
 
-              {/* Dropdown */}
               {dropdownOpen && (
                 <motion.div
                   initial={{ opacity: 0, y: 5, scale: 0.97 }}
@@ -157,16 +150,8 @@ export default function Navbar() {
                   transition={{ duration: 0.15 }}
                   className="absolute right-0 mt-2 w-56 rounded-xl bg-card/95 backdrop-blur-xl border border-border/40 shadow-2xl overflow-hidden"
                 >
-                  {/* User info */}
                   <div className="px-4 py-3 border-b border-border/30">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {isAdmin && !user ? "관리자 모드" : displayName}
-                    </p>
-                    {user && (
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {user.email}
-                      </p>
-                    )}
+                    <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
                     {isAdmin && (
                       <span className="inline-block mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent/20 text-accent">
                         ADMIN
@@ -174,71 +159,48 @@ export default function Navbar() {
                     )}
                   </div>
 
-                  {/* Menu items */}
                   <div className="py-1">
-                    {user && (
-                      <Link
-                        to="/my-games"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        내 게임
-                      </Link>
-                    )}
-                    {isAdmin && (
-                      <Link
-                        to="/admin"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect width="18" height="18" x="3" y="3" rx="2" />
-                          <path d="M3 9h18" />
-                          <path d="M9 21V9" />
-                        </svg>
-                        관리자 대시보드
-                      </Link>
-                    )}
+                    <Link
+                      to={isAdmin ? "/admin" : "/dashboard"}
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="18" height="18" x="3" y="3" rx="2" />
+                        <path d="M3 9h18" />
+                        <path d="M9 21V9" />
+                      </svg>
+                      {isAdmin ? "관리자 대시보드" : "내 대시보드"}
+                    </Link>
+                    <Link
+                      to="/my-games"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                      내 게임
+                    </Link>
                   </div>
 
-                  {/* Logout */}
                   <div className="border-t border-border/30 py-1">
-                    {user && (
-                      <button
-                        onClick={() => {
-                          signOut();
-                          toast("로그아웃 완료", "info");
-                          setDropdownOpen(false);
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-red-400 hover:bg-secondary/50 transition-colors"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                          <polyline points="16 17 21 12 16 7" />
-                          <line x1="21" y1="12" x2="9" y2="12" />
-                        </svg>
-                        로그아웃
-                      </button>
-                    )}
-                    {isAdmin && (
-                      <button
-                        onClick={() => {
-                          adminLogout();
-                          toast("관리자 로그아웃 완료", "info");
-                          setDropdownOpen(false);
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-red-400 hover:bg-secondary/50 transition-colors"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                        </svg>
-                        관리자 로그아웃
-                      </button>
-                    )}
+                    <button
+                      onClick={() => {
+                        logout();
+                        toast("로그아웃 완료", "info");
+                        setDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-red-400 hover:bg-secondary/50 transition-colors"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                      </svg>
+                      로그아웃
+                    </button>
                   </div>
                 </motion.div>
               )}

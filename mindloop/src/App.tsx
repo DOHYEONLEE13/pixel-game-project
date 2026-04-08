@@ -10,6 +10,7 @@ import ShortsPage from "@/pages/ShortsPage";
 import SearchPage from "@/pages/SearchPage";
 import MyGamesPage from "@/pages/MyGamesPage";
 import AdminPage from "@/pages/AdminPage";
+import DashboardPage from "@/pages/DashboardPage";
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
               <Route path="/search" element={<SearchPage />} />
               <Route path="/my-games" element={<MyGamesPage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
             </Routes>
             <MobileTabBar />
           </div>

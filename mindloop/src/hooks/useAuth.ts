@@ -1,184 +1,101 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import type { User, Session } from "@supabase/supabase-js";
-import type { Profile } from "@/types/database";
+
+export interface AppUser {
+  id: string;
+  username: string;
+  role: "admin" | "uploader";
+}
 
 interface AuthState {
-  user: User | null;
-  profile: Profile | null;
-  session: Session | null;
-  isAdmin: boolean;
+  user: AppUser | null;
   loading: boolean;
 }
 
-const ADMIN_TOKEN_KEY = "playwave_admin_token";
+const SESSION_KEY = "playwave_session";
 
-/** Check admin token against the server (HMAC verification) */
-async function verifyAdminToken(): Promise<boolean> {
-  const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-  if (!token) return false;
-
-  // Quick client-side expiry check to avoid unnecessary RPC calls
-  try {
-    const payload = token.split(".")[0];
-    const expiry = Number(payload.split(":")[1]);
-    if (Date.now() / 1000 > expiry) {
-      localStorage.removeItem(ADMIN_TOKEN_KEY);
-      return false;
-    }
-  } catch {
-    localStorage.removeItem(ADMIN_TOKEN_KEY);
-    return false;
-  }
-
-  // Server-side HMAC verification
-  const { data, error } = await supabase.rpc("verify_admin_token", {
-    token_input: token,
-  });
-  if (error || !data) {
-    localStorage.removeItem(ADMIN_TOKEN_KEY);
-    return false;
-  }
-  return true;
+export function getSessionToken(): string {
+  return localStorage.getItem(SESSION_KEY) || "";
 }
 
 export function useAuth() {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    profile: null,
-    session: null,
-    isAdmin: false,
-    loading: true,
-  });
+  const [state, setState] = useState<AuthState>({ user: null, loading: true });
 
-  // Fetch profile from DB
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    return data as Profile | null;
-  }, []);
-
-  // Listen to auth state changes
+  // Verify session on mount
   useEffect(() => {
-    let cancelled = false;
-
-    const init = async () => {
-      // Check admin token (server-verified)
-      const adminValid = await verifyAdminToken();
-
-      // Get initial session
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (cancelled) return;
-
-      let profile: Profile | null = null;
-      if (session?.user) {
-        profile = await fetchProfile(session.user.id);
+    const token = getSessionToken();
+    if (!token) {
+      setState({ user: null, loading: false });
+      return;
+    }
+    (async () => {
+      const { data, error } = await supabase.rpc("auth_me", { p_token: token });
+      if (error || !data || data.length === 0) {
+        localStorage.removeItem(SESSION_KEY);
+        setState({ user: null, loading: false });
+        return;
       }
-
-      if (cancelled) return;
-      setState({
-        user: session?.user ?? null,
-        session,
-        profile,
-        isAdmin: adminValid,
-        loading: false,
-      });
-    };
-
-    init();
-
-    // Subscribe to changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      let profile: Profile | null = null;
-      if (session?.user) {
-        profile = await fetchProfile(session.user.id);
-      }
-      setState((prev) => ({
-        ...prev,
-        user: session?.user ?? null,
-        session,
-        profile,
-        loading: false,
-      }));
-    });
-
-    return () => {
-      cancelled = true;
-      subscription.unsubscribe();
-    };
-  }, [fetchProfile]);
-
-  // Sign up
-  const signUp = useCallback(
-    async (email: string, password: string, nickname: string) => {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { nickname } },
-      });
-      if (error) throw error;
-      return data;
-    },
-    []
-  );
-
-  // Sign in
-  const signIn = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-    return data;
+      const row = data[0] as AppUser;
+      setState({ user: row, loading: false });
+    })();
   }, []);
 
-  // Sign out
-  const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-    setState((prev) => ({
-      ...prev,
-      user: null,
-      session: null,
-      profile: null,
-    }));
-  }, []);
-
-  // Admin login via RPC — returns HMAC-signed token
-  const adminLogin = useCallback(async (password: string) => {
-    const { data, error } = await supabase.rpc("verify_admin_password", {
-      password_input: password,
+  const login = useCallback(async (username: string, password: string) => {
+    const { data, error } = await supabase.rpc("auth_login", {
+      p_username: username,
+      p_password: password,
     });
-    if (error) throw error;
-    if (!data) throw new Error("비밀번호가 올바르지 않습니다");
-
-    // data is now the HMAC token string (empty string = wrong password)
+    if (error) {
+      throw new Error(
+        error.message.includes("invalid_credentials")
+          ? "아이디 또는 비밀번호가 올바르지 않습니다"
+          : error.message
+      );
+    }
     const token = data as string;
-    if (!token) throw new Error("비밀번호가 올바르지 않습니다");
+    if (!token) throw new Error("로그인 실패");
+    localStorage.setItem(SESSION_KEY, token);
 
-    localStorage.setItem(ADMIN_TOKEN_KEY, token);
-    setState((prev) => ({ ...prev, isAdmin: true }));
+    // Fetch user info
+    const me = await supabase.rpc("auth_me", { p_token: token });
+    const row = (me.data as AppUser[])?.[0];
+    if (!row) throw new Error("사용자 정보를 불러올 수 없습니다");
+    setState({ user: row, loading: false });
+    return row;
   }, []);
 
-  // Admin logout
-  const adminLogout = useCallback(() => {
-    localStorage.removeItem(ADMIN_TOKEN_KEY);
-    setState((prev) => ({ ...prev, isAdmin: false }));
+  const register = useCallback(async (username: string, password: string) => {
+    const { data, error } = await supabase.rpc("auth_register", {
+      p_username: username,
+      p_password: password,
+    });
+    if (error) {
+      const msg = error.message;
+      if (msg.includes("username_taken")) throw new Error("이미 사용 중인 아이디입니다");
+      if (msg.includes("username_too_short")) throw new Error("아이디는 3자 이상이어야 합니다");
+      if (msg.includes("password_too_short")) throw new Error("비밀번호는 4자 이상이어야 합니다");
+      throw new Error(msg);
+    }
+    const token = data as string;
+    localStorage.setItem(SESSION_KEY, token);
+    const me = await supabase.rpc("auth_me", { p_token: token });
+    const row = (me.data as AppUser[])?.[0];
+    if (!row) throw new Error("회원가입 실패");
+    setState({ user: row, loading: false });
+    return row;
+  }, []);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem(SESSION_KEY);
+    setState({ user: null, loading: false });
   }, []);
 
   return {
-    ...state,
-    signUp,
-    signIn,
-    signOut,
-    adminLogin,
-    adminLogout,
+    user: state.user,
+    loading: state.loading,
+    isAdmin: state.user?.role === "admin",
+    login,
+    register,
+    logout,
   };
 }

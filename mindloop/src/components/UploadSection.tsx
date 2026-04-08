@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { getSessionToken } from "@/hooks/useAuth";
 import { useToast } from "@/components/Toast";
 import AuthModal from "./AuthModal";
 
@@ -81,7 +82,7 @@ function isAllowedFile(name: string): boolean {
 }
 
 export default function UploadSection() {
-  const { isAdmin } = useAuthContext();
+  const { user, isAdmin } = useAuthContext();
   const { toast } = useToast();
 
   const [form, setForm] = useState<UploadForm>({
@@ -182,7 +183,7 @@ export default function UploadSection() {
   const isFormReady = hasHtmlFile && form.title.trim() && form.category;
 
   const handleUpload = async () => {
-    if (!isAdmin) {
+    if (!user) {
       setShowAuthModal(true);
       return;
     }
@@ -238,28 +239,32 @@ export default function UploadSection() {
         .map((t) => t.trim())
         .filter(Boolean);
 
-      // 7. Insert game metadata via admin RPC (server-side token verification)
-      const adminToken = localStorage.getItem("playwave_admin_token") || "";
-      const { error: dbError } = await supabase.rpc("admin_insert_game", {
-        admin_token: adminToken,
-        game_id: gameId,
-        game_title: form.title.trim(),
-        game_description: form.description.trim() || null,
-        game_category: categoryMap[form.category] || "casual",
-        game_type: form.type,
-        game_playtime: form.playtime.trim() || null,
-        game_tags: tags.length > 0 ? tags : null,
-        game_html_url: htmlUrlData.publicUrl,
-        game_thumbnail_url: thumbnailUrl,
-        game_file_paths: filePaths,
-        game_entry_file: entryFile,
-        game_status: "live",
+      // 7. Insert game metadata via uploader RPC (uploader → pending, admin → live)
+      const token = getSessionToken();
+      const { error: dbError } = await supabase.rpc("uploader_insert_game", {
+        p_token: token,
+        p_game_id: gameId,
+        p_title: form.title.trim(),
+        p_description: form.description.trim() || null,
+        p_category: categoryMap[form.category] || "casual",
+        p_type: form.type,
+        p_playtime: form.playtime.trim() || null,
+        p_tags: tags.length > 0 ? tags : null,
+        p_html_url: htmlUrlData.publicUrl,
+        p_thumbnail_url: thumbnailUrl,
+        p_file_paths: filePaths,
+        p_entry_file: entryFile,
       });
 
       if (dbError) throw new Error(`게임 등록 실패: ${dbError.message}`);
 
       // Success
-      toast(`${form.title} 업로드 완료!`, "success");
+      toast(
+        isAdmin
+          ? `${form.title} 업로드 완료!`
+          : `${form.title} 제출 완료! 관리자 승인 후 게시됩니다.`,
+        "success"
+      );
       setUploadDone(true);
       setTimeout(() => {
         setUploadDone(false);
@@ -309,19 +314,19 @@ export default function UploadSection() {
             </p>
           </motion.div>
 
-          {/* Admin check banner */}
-          {!isAdmin && (
+          {/* Login banner */}
+          {!user && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="mb-6 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm text-center"
             >
-              게임 업로드는 관리자만 가능합니다.{" "}
+              게임 업로드는 로그인 후 이용 가능합니다.{" "}
               <button
                 onClick={() => setShowAuthModal(true)}
                 className="underline hover:text-yellow-300"
               >
-                관리자 로그인
+                로그인
               </button>
             </motion.div>
           )}
@@ -557,9 +562,9 @@ export default function UploadSection() {
               whileHover={isFormReady ? { scale: 1.02, boxShadow: "0 0 30px rgba(255,255,255,0.15)" } : {}}
               whileTap={isFormReady ? { scale: 0.98 } : {}}
               onClick={handleUpload}
-              disabled={(!isFormReady && isAdmin) || isUploading}
+              disabled={(!isFormReady && !!user) || isUploading}
               className={`w-full py-4 rounded-2xl text-sm font-semibold transition-all duration-300 relative overflow-hidden ${
-                !isAdmin
+                !user
                   ? "bg-yellow-500/20 text-yellow-400 cursor-pointer border border-yellow-500/30"
                   : isFormReady
                     ? "bg-foreground text-background cursor-pointer"
@@ -577,21 +582,29 @@ export default function UploadSection() {
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full" />
                     업로드 중...
                   </motion.span>
-                ) : !isAdmin ? (
-                  <motion.span key="admin-required" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                    관리자 로그인 필요
+                ) : !user ? (
+                  <motion.span key="login-required" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                    로그인 후 업로드
                   </motion.span>
                 ) : (
                   <motion.span key="idle" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                    게임 업로드하기
+                    {isAdmin ? "게임 업로드하기" : "게임 제출하기 (승인 대기)"}
                   </motion.span>
                 )}
               </AnimatePresence>
             </motion.button>
 
             <p className="text-center text-muted-foreground/50 text-xs mt-4">
-              개별 10MB · 전체 50MB · HTML 파일 필수 · 업로드 즉시 게임 피드에 등록됩니다
+              개별 10MB · 전체 50MB · HTML 파일 필수
             </p>
+
+            {/* Legal notice */}
+            <div className="mt-4 px-4 py-3 rounded-xl bg-white/5 border border-white/10">
+              <p className="text-[11px] leading-relaxed text-muted-foreground text-center">
+                저작권이 있는 저작물을 무단 도용하여 발생한 모든 책임은 업로더에게 있으며,
+                <span className="text-foreground font-medium"> 'gamedrop'</span>은 이에 대해 어떠한 책임도 지지 않습니다.
+              </p>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -599,7 +612,6 @@ export default function UploadSection() {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        initialTab="admin"
       />
     </>
   );
