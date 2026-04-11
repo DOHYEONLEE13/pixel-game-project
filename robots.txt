@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Disallow: /.claude/
+
+# Google
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Naver
+User-agent: Yeti
+Allow: /
+Crawl-delay: 1
+
+# Bing
+User-agent: Bingbot
+Allow: /
+
+Sitemap: https://mbti-compatibility.pages.dev/sitemap.xml
