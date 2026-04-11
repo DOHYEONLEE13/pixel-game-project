@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MBTI 궁합 테스트 - 나와 상대방의 MBTI를 선택하고 궁합을 확인해보세요!">
+<title>MBTI 궁합 테스트</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    color: #fff;
+  }
+
+  #bg-video {
+    position: fixed;
+    top: 50%; left: 50%;
+    min-width: 100%; min-height: 100%;
+    transform: translate(-50%, -50%);
+    z-index: -2;
+    object-fit: cover;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: -1;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 520px;
+    padding: 24px 16px 40px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 6px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: 0.95rem;
+    opacity: 0.8;
+    margin-bottom: 28px;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 20px;
+    padding: 28px 24px;
+    margin-bottom: 16px;
+  }
+
+  .section-label {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label .icon {
+    font-size: 1.3rem;
+  }
+
+  .trait-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .trait-label {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    width: 70px;
+    text-align: center;
+  }
+
+  .trait-label:first-child { text-align: right; }
+  .trait-label:last-child { text-align: left; }
+
+  .trait-btn {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 48px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .trait-btn:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.5);
+  }
+
+  .trait-btn.selected {
+    background: rgba(255,255,255,0.95);
+    color: #1a1a2e;
+    border-color: #fff;
+    box-shadow: 0 0 16px rgba(255,255,255,0.3);
+  }
+
+  .vs-text {
+    font-size: 0.8rem;
+    font-weight: 500;
+    opacity: 0.5;
+    flex: 0 0 auto;
+  }
+
+  .mbti-preview {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 900;
+    letter-spacing: 6px;
+    margin-top: 8px;
+    min-height: 40px;
+    color: rgba(255,255,255,0.9);
+    text-shadow: 0 0 20px rgba(255,255,255,0.3);
+  }
+
+  .check-btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 20px rgba(102,126,234,0.4);
+  }
+
+  .check-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 28px rgba(102,126,234,0.6);
+  }
+
+  .check-btn:active {
+    transform: translateY(0);
+  }
+
+  .check-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Result Area */
+  .result-area {
+    display: none;
+    margin-top: 20px;
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    animation: fadeUp 0.6s ease;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-pair {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: 2px;
+  }
+
+  .result-grade-icon {
+    font-size: 3rem;
+    margin: 12px 0 8px;
+  }
+
+  .result-main-msg {
+    font-size: 1.3rem;
+    font-weight: 900;
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+
+  .result-desc {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    opacity: 0.92;
+    text-align: left;
+    white-space: pre-line;
+  }
+
+  .result-grade-bar {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin: 16px 0 8px;
+  }
+
+  .grade-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    opacity: 0.3;
+    transition: all 0.3s;
+  }
+
+  .grade-dot.active {
+    opacity: 1;
+    transform: scale(1.4);
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  /* Grade colors */
+  .grade-best    { background: rgba(59,130,246,0.85); color: #fff; }
+  .grade-good    { background: rgba(22,101,52,0.85); color: #fff; }
+  .grade-mid     { background: rgba(132,204,22,0.85); color: #1a1a2e; }
+  .grade-low     { background: rgba(234,179,8,0.85); color: #1a1a2e; }
+  .grade-worst   { background: rgba(220,38,38,0.85); color: #fff; }
+
+  .retry-btn {
+    margin-top: 24px;
+    padding: 12px 32px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .retry-btn:hover {
+    background: rgba(255,255,255,0.25);
+    border-color: rgba(255,255,255,0.6);
+  }
+
+  .share-btn {
+    margin-top: 12px;
+    margin-left: 10px;
+    padding: 12px 32px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.9);
+    color: #1a1a2e;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .share-btn:hover {
+    background: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  }
+
+  .share-btn:active { transform: translateY(0); }
+
+  /* Detail Modal */
+  .detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .detail-overlay.open { display: flex; }
+
+  .detail-sheet {
+    background: linear-gradient(160deg, #0d0d1e 0%, #16213e 100%);
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 85vh;
+    overflow-y: auto;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-bottom: none;
+    animation: slideUp 0.32s cubic-bezier(0.32,0.72,0,1);
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0.6; }
+    to   { transform: translateY(0);   opacity: 1; }
+  }
+
+  .detail-drag {
+    width: 40px; height: 4px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 2px;
+    margin: 14px auto 0;
+  }
+
+  .detail-header {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 12px;
+    background: linear-gradient(160deg, #0d0d1e 0%, #16213e 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    z-index: 1;
+  }
+
+  .detail-title { font-size: 1.1rem; font-weight: 900; letter-spacing: 3px; }
+
+  .detail-close-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .detail-close-btn:hover { background: rgba(255,255,255,0.24); }
+
+  .detail-body { padding: 20px 20px 8px; }
+
+  .detail-grade-pill {
+    display: inline-block;
+    padding: 5px 16px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: 0.5px;
+  }
+
+  .detail-feature {
+    font-size: 0.92rem;
+    line-height: 1.82;
+    opacity: 0.88;
+    margin-bottom: 22px;
+    padding: 16px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 14px;
+    border-left: 3px solid rgba(255,255,255,0.2);
+  }
+
+  .detail-section { margin-bottom: 20px; }
+
+  .detail-section-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+    opacity: 0.75;
+    text-transform: uppercase;
+  }
+
+  .detail-items { display: flex; flex-direction: column; gap: 8px; }
+
+  .detail-item {
+    font-size: 0.87rem;
+    line-height: 1.65;
+    padding: 11px 14px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 11px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .detail-item-icon { flex-shrink: 0; }
+
+  .detail-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 13px;
+    border: 2px solid rgba(255,255,255,0.25);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.07);
+    color: #fff;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .detail-btn:hover {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.45);
+  }
+
+  /* Ranking */
+  .ranking-section { display: none; margin-bottom: 16px; }
+
+  .ranking-toggle {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border: 2px solid rgba(255,255,255,0.22);
+    border-radius: 16px;
+    background: rgba(255,255,255,0.07);
+    color: #fff;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+  }
+
+  .ranking-toggle:hover {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.4);
+  }
+
+  .ranking-list {
+    display: none;
+    background: rgba(255,255,255,0.09);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 16px;
+    overflow: hidden;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .rank-group-header {
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 8px 16px;
+    background: rgba(0,0,0,0.2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .ranking-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    transition: background 0.15s;
+  }
+
+  .ranking-item:last-child { border-bottom: none; }
+  .ranking-item:hover { background: rgba(255,255,255,0.1); }
+
+  .ranking-item.active {
+    background: rgba(255,255,255,0.18);
+    box-shadow: inset 3px 0 0 rgba(255,255,255,0.6);
+  }
+
+  .rank-num {
+    font-size: 0.78rem;
+    opacity: 0.45;
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .rank-type {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    flex: 1;
+  }
+
+  .rank-desc-short {
+    font-size: 0.75rem;
+    opacity: 0.65;
+    flex: 2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .rank-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+
+  .tap-hint {
+    text-align: center;
+    font-size: 0.78rem;
+    opacity: 0.5;
+    padding: 10px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(30,30,30,0.95);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 24px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 9999;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  @media (max-width: 400px) {
+    .trait-btn { width: 56px; height: 44px; font-size: 1rem; }
+    .trait-label { width: 56px; font-size: 0.68rem; }
+    h1 { font-size: 1.6rem; }
+    .card { padding: 20px 16px; }
+  }
+
+  noscript {
+    display: block;
+    text-align: center;
+    padding: 40px;
+    color: #fff;
+    font-size: 1.1rem;
+  }
+</style>
+</head>
+<body>
+
+<video id="bg-video" autoplay muted loop playsinline>
+  <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260307_083826_e938b29f-a43a-41ec-a153-3d4730578ab8.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<noscript>이 페이지는 JavaScript가 필요합니다. 브라우저 설정에서 JavaScript를 활성화해주세요.</noscript>
+
+<div class="container" id="app">
+
+  <h1>MBTI 궁합 테스트</h1>
+  <p class="subtitle">나와 상대방의 MBTI를 선택하고 궁합을 확인해보세요</p>
+
+  <!-- My MBTI -->
+  <div class="card">
+    <div class="section-label"><span class="icon">🧑</span> 내 MBTI</div>
+    <div id="my-selector"></div>
+    <div class="mbti-preview" id="my-preview">????</div>
+  </div>
+
+  <!-- Ranking Section -->
+  <div class="ranking-section" id="ranking-section">
+    <button class="ranking-toggle" id="ranking-toggle" onclick="toggleRanking()">
+      📊 내 MBTI 기준 전체 궁합 순위 보기
+    </button>
+    <div class="ranking-list" id="ranking-list"></div>
+  </div>
+
+  <!-- Partner MBTI -->
+  <div class="card">
+    <div class="section-label"><span class="icon">💕</span> 상대방 MBTI</div>
+    <div id="partner-selector"></div>
+    <div class="mbti-preview" id="partner-preview">????</div>
+  </div>
+
+  <!-- Submit -->
+  <button class="check-btn" id="check-btn" disabled onclick="showResult()">궁합 보기</button>
+
+  <!-- Result -->
+  <div class="result-area" id="result-area">
+    <div class="result-pair" id="result-pair"></div>
+    <div class="result-grade-bar" id="grade-bar"></div>
+    <div class="result-grade-icon" id="result-icon"></div>
+    <div class="result-main-msg" id="result-msg"></div>
+    <div class="result-desc" id="result-desc"></div>
+    <button class="detail-btn" onclick="openDetail()">📋 자세히 보기</button>
+    <div style="margin-top:12px;">
+      <button class="retry-btn" onclick="resetAll()">다시 해보기</button>
+      <button class="share-btn" onclick="shareResult()">🔗 결과 공유하기</button>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="detail-overlay" id="detail-overlay" onclick="handleOverlayClick(event)">
+    <div class="detail-sheet" id="detail-sheet">
+      <div class="detail-drag"></div>
+      <div class="detail-header">
+        <span class="detail-title" id="detail-title"></span>
+        <button class="detail-close-btn" onclick="closeDetail()">✕</button>
+      </div>
+      <div class="detail-body" id="detail-body"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+</div>
+
+<script>
+// ─── Type Profiles ───
+const TYPE_INFO = {
+  INFP: { nick:"열정적 중재자", core:"깊은 이상주의와 섬세한 감성", pros:["탁월한 공감 능력으로 상대의 감정을 깊이 이해함","강한 내면 가치관으로 진정성 있는 관계를 추구함","창의적이고 독창적인 표현으로 관계에 깊이를 더함"], cons:["갈등 상황을 회피하는 경향이 있어 감정이 쌓일 수 있음","과도한 이상화로 현실과 기대 사이에서 실망할 수 있음"], want:["진정성 있는 감정 교류","자신의 가치관 존중","깊고 의미 있는 대화"] },
+  ENFP: { nick:"열정적 탐험가", core:"넘치는 열정과 무한한 창의성", pros:["폭발적인 긍정 에너지로 관계를 활기차게 만듦","창의적인 아이디어로 매일을 새롭고 흥미롭게 만듦","따뜻한 공감으로 상대가 특별하다고 느끼게 해줌"], cons:["일관성이 부족해 상대방이 예측하기 어려울 때가 있음","새로운 것에 쉽게 흥미를 잃어 깊이가 부족할 수 있음"], want:["새로운 경험 함께 탐구","감정적 지지와 응원","자유로운 표현과 수용"] },
+  INFJ: { nick:"선의의 옹호자", core:"깊은 통찰력과 강한 비전", pros:["예리한 직관으로 상대방의 마음을 누구보다 잘 읽음","진지하고 의미 있는 대화를 통해 깊은 유대감을 형성함","강한 목적의식으로 관계에도 진지하게 임함"], cons:["완벽주의 경향으로 관계에 지나친 기대를 할 수 있음","혼자만의 시간이 필요해 갑자기 문을 닫는 것처럼 느껴질 수 있음"], want:["깊은 정신적·감정적 연결","미래에 대한 비전 공유","진정성과 신뢰"] },
+  ENFJ: { nick:"정의로운 사회운동가", core:"따뜻한 카리스마와 헌신", pros:["탁월한 리더십으로 상대방을 자연스럽게 이끌어줌","깊은 공감 능력으로 상대방이 항상 이해받는다고 느끼게 함","헌신적으로 관계에 에너지를 쏟아 상대방을 성장시킴"], cons:["상대에게 너무 많은 것을 기대하거나 감정적으로 의존하는 경향이 있음","자신의 감정보다 타인을 우선시해 번아웃이 올 수 있음"], want:["상대방의 성장을 돕는 역할","감정적 조화와 안정","진심 어린 감사와 인정"] },
+  INTJ: { nick:"용의주도한 전략가", core:"냉철한 전략적 사고와 독립성", pros:["체계적이고 논리적인 사고로 문제를 명확하게 해결함","강한 독립심으로 상대에게 심리적 공간을 줌","장기적 비전을 가지고 관계의 발전 방향을 설계함"], cons:["감정 표현이 서툴러 상대방이 차갑게 느낄 수 있음","자신의 방식에 대한 확신이 강해 융통성이 부족할 때가 있음"], want:["지적 자극과 깊은 대화","독립성과 개인 공간 존중","명확한 신뢰와 약속"] },
+  ENTJ: { nick:"대담한 통솔자", core:"강력한 결단력과 실행 능력", pros:["강한 리더십으로 관계에서 방향성을 명확히 제시함","효율적인 사고로 문제를 빠르게 해결하고 앞으로 나아감","파트너의 잠재력을 발견하고 성장하도록 밀어붙임"], cons:["감정적 측면을 간과하고 너무 직선적으로 말할 때가 있음","지나친 경쟁심으로 관계에서도 이기려 하는 경향이 있음"], want:["능력과 성과에 대한 인정","함께 성장하는 파트너","명확하고 직접적인 소통"] },
+  INTP: { nick:"논리적 사색가", core:"깊은 논리적 분석과 지적 호기심", pros:["뛰어난 분석력으로 어떤 상황도 객관적으로 파악함","창의적 문제해결로 관계의 어려움을 새로운 시각으로 봄","지식에 대한 끝없는 호기심으로 함께 성장함"], cons:["감정 표현이 서툴러 실제 마음이 전달되지 않을 때가 있음","지나친 분석으로 결정을 미루고 우유부단하게 보일 수 있음"], want:["지적 대화와 토론","개인적인 공간과 시간 존중","깊이 있고 솔직한 관계"] },
+  ENTP: { nick:"뜨거운 논쟁가", core:"독창적 창의성과 지적 도전 정신", pros:["독창적인 아이디어로 관계를 지루하지 않게 만듦","빠른 적응력으로 어떤 상황에서도 유연하게 대처함","지적 유연성으로 다양한 관점을 탐구하고 공유함"], cons:["일관성이 부족해 말과 행동이 다를 때가 있음","논쟁적 성향으로 의도치 않게 상대방에게 상처를 줄 수 있음"], want:["지적 자극과 도전","독립성과 자율성 존중","새로운 아이디어 함께 탐구"] },
+  ISFP: { nick:"호기심 많은 예술가", core:"섬세한 감각과 예술적 감성", pros:["뛰어난 미적 감각으로 일상을 아름답게 만듦","유연한 적응력으로 상대방의 페이스를 자연스럽게 맞춰줌","조용하지만 깊은 배려로 상대방을 포근하게 감싸줌"], cons:["갈등을 회피하다 감정이 쌓여 한꺼번에 터질 수 있음","장기 계획을 세우기 어려워 관계의 방향성이 흐릿할 때가 있음"], want:["현재 순간을 함께 즐기는 것","있는 그대로의 수용","조용하고 깊은 감정적 교류"] },
+  ESFP: { nick:"자유로운 연예인", core:"활기차고 즉흥적인 생명력", pros:["강한 긍정 에너지로 주변을 밝히고 함께하면 기분이 좋아짐","뛰어난 사교성으로 어디서나 분위기를 만들어냄","현재를 즐기는 능력으로 삶을 생동감 있게 만듦"], cons:["장기 계획 없이 즉흥적으로 행동해 상대방이 불안할 수 있음","깊이 있는 감정적 대화보다 즐거운 활동을 선호할 수 있음"], want:["함께 즐거운 경험 공유","자유롭고 부담 없는 관계","현재에 집중하는 파트너"] },
+  ISTP: { nick:"만능 재주꾼", core:"뛰어난 실용적 문제해결 능력", pros:["탁월한 실용적 능력으로 상대방의 문제를 직접 해결해줌","위기 상황에서 냉정하게 대처해 상대방에게 안정감을 줌","논리적 사고로 감정에 치우치지 않고 객관적으로 상황을 봄"], cons:["감정 표현이 서툴러 상대방이 관심 없다고 오해할 수 있음","갑자기 사라지거나 연락이 두절되는 예측 불가능한 면이 있음"], want:["독립성과 자유 보장","행동으로 표현하는 사랑 방식 인정","실용적이고 부담 없는 관계"] },
+  ESTP: { nick:"모험을 즐기는 사업가", core:"폭발적인 행동력과 현실 감각", pros:["강한 행동력으로 아이디어를 즉시 실행에 옮김","위기 대처 능력으로 어떤 상황에서도 믿음직스럽게 행동함","현실적인 감각으로 실질적인 도움을 줌"], cons:["충동적인 결정으로 상대방이 따라가기 벅찰 때가 있음","감정보다 결과를 중시해 상대방이 감정적으로 소외될 수 있음"], want:["활동적이고 역동적인 관계","직접적이고 솔직한 소통","현재를 즐기는 파트너"] },
+  ISFJ: { nick:"용감한 수호자", core:"따뜻한 헌신과 흔들림 없는 안정감", pros:["강한 책임감으로 어떤 상황에서도 믿을 수 있는 파트너가 됨","따뜻한 돌봄으로 상대방이 항상 보살핌을 받는다고 느끼게 함","세심한 배려로 상대방이 원하는 것을 먼저 알아채 줌"], cons:["변화를 거부하는 경향이 있어 새로운 시도에 소극적일 수 있음","자신을 너무 희생해 나중에 지치거나 서운함이 쌓일 수 있음"], want:["안정적이고 지속적인 관계","작은 배려와 헌신에 대한 인정","함께 쌓아가는 소소한 일상"] },
+  ESFJ: { nick:"사교적인 외교관", core:"따뜻한 사교성과 관계 지향성", pros:["뛰어난 사교성으로 어디서나 분위기를 만들고 연결해줌","타인을 향한 세심한 배려로 상대방이 특별하다고 느끼게 함","조화를 추구해 갈등 상황에서도 평화롭게 해결하려 노력함"], cons:["타인의 시선을 지나치게 의식해 자신의 감정을 억누를 때가 있음","갈등 회피 경향으로 솔직한 감정 전달이 늦어질 수 있음"], want:["관계의 조화와 안정","세심한 배려와 공감","함께하는 시간과 추억"] },
+  ISTJ: { nick:"청렴결백한 논리주의자", core:"철저한 책임감과 높은 신뢰성", pros:["강한 책임감으로 어떤 약속도 철저히 지켜 신뢰를 쌓음","체계적인 사고로 관계를 안정적이고 예측 가능하게 만듦","말보다 행동으로 꾸준히 사랑을 증명함"], cons:["감정 표현이 서툴러 따뜻함이 전달되지 않을 때가 있음","변화에 저항하는 성향으로 새로운 시도에 부정적일 수 있음"], want:["약속을 지키는 신뢰할 수 있는 파트너","안정적이고 예측 가능한 관계","행동으로 증명하는 사랑"] },
+  ESTJ: { nick:"엄격한 관리자", core:"체계적인 조직력과 강한 실행력", pros:["강한 조직력으로 관계에 질서와 안정을 가져다줌","강한 책임감으로 파트너와 가족을 위해 헌신함","결단력 있는 행동으로 어떤 상황에서도 방향을 잡아줌"], cons:["융통성이 부족해 자신의 방식만을 고집할 때가 있음","감정 표현보다 실용적 행동을 우선시해 차갑게 느껴질 수 있음"], want:["책임감 있고 성실한 파트너","명확하고 체계적인 관계","가족과 안정을 향한 공동 목표"] }
+};
+
+// ─── Compatibility Matrix ───
+const GRADES = {
+  best:  { level: 5, label: "천생연분", msg: "우리 궁합은 천생연분! 💙", icon: "💙", cls: "grade-best", color: "#3b82f6" },
+  good:  { level: 4, label: "발전 가능", msg: "좋은 관계로 발전 가능! 💚", icon: "💚", cls: "grade-good", color: "#166534" },
+  mid:   { level: 3, label: "반반", msg: "안 맞는 것 맞는 것, 반반! 💛", icon: "🤝", cls: "grade-mid", color: "#84cc16" },
+  low:   { level: 2, label: "좋지도 않음", msg: "최악은 아니지만 좋지도 않음 😐", icon: "😐", cls: "grade-low", color: "#eab308" },
+  worst: { level: 1, label: "다시 생각", msg: "우리 궁합 다시 생각해봐요 💔", icon: "💔", cls: "grade-worst", color: "#dc2626" }
+};
+
+// Build matrix from the provided data
+const RAW = {
+  INFP: { best:["ENFJ","ENTJ"], good:["INFP","ENFP","INFJ","INTJ","INTP","ENTP"], mid:[], low:[], worst:["ISFP","ESFP","ISTP","ESTP","ISFJ","ESFJ","ISTJ","ESTJ"] },
+  ENFP: { best:["INFJ","INTJ"], good:["INFP","ENFP","ENFJ","ENTJ","INTP","ENTP"], mid:[], low:[], worst:["ISFP","ESFP","ISTP","ESTP","ISFJ","ESFJ","ISTJ","ESTJ"] },
+  INFJ: { best:["ENFP","ENTP"], good:["INFP","INFJ","ENFJ","INTJ","ENTJ","INTP"], mid:[], low:[], worst:["ISFP","ESFP","ISTP","ESTP","ISFJ","ESFJ","ISTJ","ESTJ"] },
+  ENFJ: { best:["INFP","ISFP"], good:["ENFP","INFJ","ENFJ","INTJ","ENTJ","INTP","ENTP"], mid:[], low:[], worst:["ESFP","ISTP","ESTP","ISFJ","ESFJ","ISTJ","ESTJ"] },
+  INTJ: { best:["ENFP","ENTP"], good:["INFP","INFJ","ENFJ","INTJ","ENTJ","INTP"], mid:["ISFP","ESFP","ISTP","ESTP"], low:["ISFJ","ESFJ","ISTJ","ESTJ"], worst:[] },
+  ENTJ: { best:["INFP","INTP"], good:["ENFP","INFJ","ENFJ","INTJ","ENTJ","ENTP"], mid:["ISFP","ESFP","ISTP","ESTP"], low:["ISFJ","ESFJ","ISTJ","ESTJ"], worst:[] },
+  INTP: { best:["ENTJ","ESTJ"], good:["INFP","ENFP","INFJ","ENFJ","INTJ","INTP","ENTP"], mid:["ISFP","ESFP","ISTP","ESTP"], low:["ISFJ","ESFJ","ISTJ"], worst:[] },
+  ENTP: { best:["INFJ","INTJ"], good:["INFP","ENFP","ENFJ","ENTJ","INTP","ENTP"], mid:["ISFP","ESFP","ISTP","ESTP"], low:["ISFJ","ESFJ","ISTJ","ESTJ"], worst:[] },
+  ISFP: { best:["ENFJ","ESFJ","ESTJ"], good:[], mid:["INTJ","ENTJ","INTP","ENTP","ISFJ","ISTJ"], low:["ISFP","ESFP","ISTP","ESTP"], worst:["INFP","ENFP","INFJ"] },
+  ESFP: { best:["ISFJ","ISTJ"], good:[], mid:["INTJ","ENTJ","INTP","ENTP","ESFJ","ESTJ"], low:["ISFP","ESFP","ISTP","ESTP"], worst:["INFP","ENFP","INFJ","ENFJ"] },
+  ISTP: { best:["ESFJ","ESTJ"], good:[], mid:["INTJ","ENTJ","INTP","ENTP","ISFJ","ISTJ"], low:["ISFP","ESFP","ISTP","ESTP"], worst:["INFP","ENFP","INFJ","ENFJ"] },
+  ESTP: { best:["ISFJ","ISTJ"], good:[], mid:["INTJ","ENTJ","INTP","ENTP","ESFJ","ESTJ"], low:["ISFP","ESFP","ISTP","ESTP"], worst:["INFP","ENFP","INFJ","ENFJ"] },
+  ISFJ: { best:["ESFP","ESTP"], good:["ISFJ","ESFJ","ISTJ","ESTJ"], mid:["ISFP","ISTP"], low:["INTJ","ENTJ","INTP","ENTP"], worst:["INFP","ENFP","INFJ","ENFJ"] },
+  ESFJ: { best:["ISFP","ISTP"], good:["ISFJ","ESFJ","ISTJ","ESTJ"], mid:["ESFP","ESTP"], low:["INTJ","ENTJ","INTP","ENTP"], worst:["INFP","ENFP","INFJ","ENFJ"] },
+  ISTJ: { best:["ESFP","ESTP"], good:["ISFJ","ESFJ","ISTJ","ESTJ"], mid:["ISFP","ISTP"], low:["INTJ","ENTJ","INTP","ENTP"], worst:["INFP","ENFP","INFJ","ENFJ"] },
+  ESTJ: { best:["INTP","ISFP","ISTP"], good:["ISFJ","ESFJ","ISTJ","ESTJ"], mid:["ESFP","ESTP"], low:["INTJ","ENTJ","ENTP"], worst:["INFP","ENFP","INFJ","ENFJ"] }
+};
+
+// Build lookup: matrix[A][B] = grade key
+const matrix = {};
+const TYPES = ["INFP","ENFP","INFJ","ENFJ","INTJ","ENTJ","INTP","ENTP","ISFP","ESFP","ISTP","ESTP","ISFJ","ESFJ","ISTJ","ESTJ"];
+TYPES.forEach(t => { matrix[t] = {}; });
+TYPES.forEach(from => {
+  Object.entries(RAW[from]).forEach(([grade, targets]) => {
+    targets.forEach(to => { matrix[from][to] = grade; });
+  });
+});
+
+// ─── Descriptions ───
+const DESC = {
+  // NF-NF pairs
+  "INFP-ENFJ": "INFP의 깊은 내면 세계와 ENFJ의 따뜻한 리더십이 만나면 서로에게 영감을 주는 관계가 됩니다. ENFJ는 INFP가 자신의 가치를 세상에 표현하도록 도와주고, INFP는 ENFJ에게 진정한 자아를 돌아볼 여유를 선물합니다. 감정적 교류가 깊고, 서로의 이상을 존중하는 아름다운 조합입니다.",
+  "INFP-ENTJ": "꿈꾸는 이상주의자 INFP와 목표를 향해 달려가는 ENTJ. 정반대처럼 보이지만 서로에게 없는 것을 채워주는 환상의 궁합입니다. ENTJ는 INFP의 꿈을 현실로 만들어주고, INFP는 ENTJ에게 사람과 감정의 소중함을 일깨워줍니다.",
+  "INFP-INFP": "같은 INFP끼리는 서로의 감정을 깊이 이해하고 공감할 수 있습니다. 예술, 문학, 음악 등 공통 관심사를 통해 깊은 유대감을 형성하지만, 갈등 상황에서 둘 다 회피하려는 경향이 있어 소통에 노력이 필요합니다.",
+  "INFP-ENFP": "둘 다 NF 유형으로 감정적 교류가 풍부합니다. ENFP의 에너지와 INFP의 깊이가 만나면 창의적이고 영감 넘치는 관계가 됩니다. 다만 현실적인 문제 해결에서 함께 어려움을 겪을 수 있으니 균형이 중요합니다.",
+  "INFP-INFJ": "두 유형 모두 이상주의적이고 깊은 내면을 가지고 있어 말하지 않아도 서로를 이해하는 듯한 느낌을 받습니다. 조용하지만 의미 있는 대화를 나누며 정서적 유대가 강한 관계를 만들어갑니다.",
+  "INFP-INTJ": "INFP의 감성과 INTJ의 논리가 만나면 서로 다른 관점에서 세상을 바라보는 흥미로운 조합이 됩니다. 깊은 대화를 즐기고, 서로의 지적 세계를 탐험하며 성장할 수 있습니다.",
+  "INFP-INTP": "둘 다 내향적이고 사색적인 유형으로, 조용하지만 깊이 있는 관계를 만들 수 있습니다. INTP의 논리적 분석과 INFP의 감정적 통찰이 서로를 보완하며, 지적이면서도 감성적인 대화가 가능합니다.",
+  "INFP-ENTP": "ENTP의 끊임없는 아이디어와 INFP의 깊은 가치관이 만나면 흥미진진한 토론과 교류가 이어집니다. 서로 다른 방식으로 세상을 탐구하면서도 새로운 가능성에 열린 태도를 공유합니다.",
+
+  "ENFP-INFJ": "ENFP의 열정과 INFJ의 통찰력이 만나면 마법 같은 케미가 발생합니다. 둘 다 깊은 대화를 사랑하고, 서로의 꿈을 응원하며, 진정한 연결감을 느낄 수 있는 황금 조합입니다.",
+  "ENFP-INTJ": "자유로운 ENFP와 전략적인 INTJ는 서로에게 강하게 끌리는 조합입니다. ENFP는 INTJ에게 새로운 세상을 보여주고, INTJ는 ENFP의 아이디어에 구조와 깊이를 더해줍니다.",
+  "ENFP-ENFP": "두 ENFP가 만나면 에너지가 폭발합니다! 끝없는 아이디어, 모험, 웃음이 가득하지만, 누가 현실적인 부분을 담당할지가 과제입니다. 서로를 자극하는 재미있는 관계가 됩니다.",
+  "ENFP-ENFJ": "둘 다 외향적이고 감정적으로 풍부한 유형으로, 함께 있으면 에너지가 넘칩니다. 사람과 관계를 중시하는 가치관을 공유하며, 서로를 격려하고 응원하는 따뜻한 관계를 만듭니다.",
+  "ENFP-ENTJ": "ENFP의 창의성과 ENTJ의 실행력이 만나면 꿈을 현실로 만드는 파워 커플이 됩니다. 서로의 강점을 인정하고 보완하면서 함께 성장할 수 있는 역동적인 관계입니다.",
+  "ENFP-INTP": "호기심 가득한 두 유형이 만나면 끝없는 대화와 아이디어 교환이 이어집니다. ENFP가 INTP를 사교적인 세계로 이끌고, INTP는 ENFP에게 논리적 깊이를 선물합니다.",
+  "ENFP-ENTP": "두 유형 모두 새로운 것을 탐구하고 토론하기를 좋아합니다. 함께라면 지루할 틈이 없고, 서로의 아이디어를 발전시키는 활발한 관계가 되지만, 현실적인 부분에서 균형이 필요합니다.",
+
+  "INFJ-ENFP": "INFJ의 통찰력과 ENFP의 열정이 만나면 서로의 숨겨진 면을 발견하는 깊은 관계가 됩니다. 둘 다 의미 있는 삶을 추구하며, 서로에게 끊임없는 영감을 줍니다.",
+  "INFJ-ENTP": "INFJ의 직관과 ENTP의 독창성이 만나면 지적으로 자극적인 관계가 됩니다. 서로 다른 방식으로 세상을 이해하지만, 그 차이가 오히려 매력적인 천생연분 조합입니다.",
+  "INFJ-INFP": "두 유형 모두 깊은 내면 세계를 가지고 있어 서로를 자연스럽게 이해합니다. 감정적 교류가 풍부하고, 의미 있는 대화를 즐기며, 서로의 성장을 돕는 따뜻한 관계가 됩니다.",
+  "INFJ-INFJ": "같은 유형끼리의 만남은 마치 거울을 보는 것과 같습니다. 깊은 수준에서의 이해와 공감이 가능하지만, 서로의 단점도 함께 증폭될 수 있어 의식적인 노력이 필요합니다.",
+  "INFJ-ENFJ": "둘 다 타인을 돕고 싶어하는 이타적인 유형으로, 함께 의미 있는 일을 추구하며 강한 유대감을 형성합니다. 서로의 비전을 공유하고 함께 성장하는 관계가 가능합니다.",
+  "INFJ-INTJ": "두 유형 모두 직관적이고 전략적인 사고를 합니다. 깊은 대화와 미래에 대한 비전을 공유하며, 서로의 지적 세계를 존중하는 성숙한 관계를 만들어갈 수 있습니다.",
+  "INFJ-ENTJ": "INFJ의 통찰력과 ENTJ의 결단력이 만나면 서로를 보완하는 강력한 조합이 됩니다. 둘 다 목표 지향적이며, 함께 큰 그림을 그리고 실현해나갈 수 있습니다.",
+  "INFJ-INTP": "조용하지만 지적인 두 유형이 만나면 깊이 있는 대화와 사색을 함께 즐길 수 있습니다. INTP의 논리와 INFJ의 직관이 서로를 자극하며 성장하는 관계가 됩니다.",
+
+  "ENFJ-INFP": "ENFJ의 따뜻한 리더십과 INFP의 깊은 감성이 만나면 서로에게 최고의 파트너가 됩니다. ENFJ는 INFP의 꿈을 실현하도록 돕고, INFP는 ENFJ에게 진정한 휴식과 위안을 줍니다.",
+  "ENFJ-ISFP": "ENFJ의 열정과 ISFP의 섬세함이 만나면 서로의 세계를 풍요롭게 만드는 조화로운 관계가 됩니다. ENFJ는 ISFP가 세상으로 나오도록 격려하고, ISFP는 ENFJ에게 현재를 즐기는 법을 알려줍니다.",
+  "ENFJ-ENFP": "에너지 넘치는 두 유형이 만나면 주변까지 밝히는 활기찬 관계가 됩니다. 서로의 열정을 응원하고, 감정적으로 깊이 연결되며, 함께 성장하는 아름다운 파트너십을 만듭니다.",
+  "ENFJ-INFJ": "둘 다 사람을 중시하고 이타적인 유형으로, 깊은 이해와 공감을 바탕으로 한 관계가 가능합니다. 서로의 비전과 가치관을 공유하며 의미 있는 삶을 함께 만들어갑니다.",
+  "ENFJ-ENFJ": "같은 ENFJ끼리는 서로의 열정과 헌신을 깊이 이해합니다. 함께 타인을 돕고 세상을 변화시키려는 공통의 목표를 가지지만, 누가 이끌지에 대한 조율이 필요할 수 있습니다.",
+  "ENFJ-INTJ": "ENFJ의 따뜻함과 INTJ의 전략적 사고가 만나면 감성과 논리의 균형을 이루는 강력한 팀이 됩니다. 서로 다른 강점으로 보완하며 큰 목표를 함께 달성할 수 있습니다.",
+  "ENFJ-ENTJ": "두 유형 모두 리더십이 강하고 목표 지향적입니다. 서로의 비전을 존중하고 함께 달려갈 때 엄청난 시너지가 발생하지만, 주도권에 대한 균형이 중요합니다.",
+  "ENFJ-INTP": "ENFJ의 감성과 INTP의 논리가 만나면 서로에게 새로운 세계를 열어주는 관계가 됩니다. ENFJ는 INTP에게 감정의 세계를, INTP는 ENFJ에게 분석적 사고를 선물합니다.",
+  "ENFJ-ENTP": "활발한 두 유형이 만나면 끊임없는 대화와 아이디어로 가득한 역동적인 관계가 됩니다. 서로의 사회성과 지적 호기심을 자극하며 함께 성장할 수 있습니다.",
+
+  // NT pairs
+  "INTJ-ENFP": "전략가 INTJ와 열정적인 ENFP는 서로에게 빠져드는 매력적인 조합입니다. ENFP는 INTJ의 세계를 밝혀주고, INTJ는 ENFP의 꿈에 체계를 부여합니다.",
+  "INTJ-ENTP": "두 유형 모두 독립적이고 지적인 탐구를 즐깁니다. 끝없는 전략적 토론과 아이디어 교환이 가능하며, 서로의 지성을 깊이 존중하는 천생연분입니다.",
+  "INTJ-INFP": "INTJ의 체계적 사고와 INFP의 감성적 깊이가 만나면 서로를 성장시키는 관계가 됩니다. 둘 다 내면의 세계가 풍부하여 깊은 수준의 연결이 가능합니다.",
+  "INTJ-INFJ": "두 유형 모두 직관적이고 미래지향적입니다. 비전을 공유하고 함께 전략을 세우며, 서로의 통찰력을 높이 평가하는 지적이고 깊은 관계가 됩니다.",
+  "INTJ-ENFJ": "INTJ의 분석력과 ENFJ의 공감 능력이 결합하면 두뇌와 마음이 하나 되는 강력한 파트너십이 됩니다. 서로의 약점을 보완하며 함께 목표를 달성합니다.",
+  "INTJ-INTJ": "같은 INTJ끼리는 서로의 독립성과 지적 추구를 완벽히 이해합니다. 불필요한 감정 소모 없이 효율적인 관계를 유지할 수 있지만, 감정적 교류에 의식적 노력이 필요합니다.",
+  "INTJ-ENTJ": "두 유형 모두 목표 지향적이고 전략적입니다. 함께라면 어떤 프로젝트든 성공시킬 수 있는 파워풀한 조합이지만, 때때로 누가 맞는지에 대한 충돌이 있을 수 있습니다.",
+  "INTJ-INTP": "두 유형 모두 논리적이고 독립적인 사고를 즐깁니다. 지적 대화가 끊이지 않으며, 서로의 공간을 존중하면서도 깊은 수준의 이해가 가능한 관계입니다.",
+  "INTJ-ISFP": "다른 관점에서 세상을 바라보는 두 유형이지만, 서로의 차이에서 새로운 것을 배울 수 있습니다. ISFP의 감성이 INTJ에게 유연함을, INTJ의 체계가 ISFP에게 방향을 줍니다.",
+  "INTJ-ESFP": "정반대의 에너지를 가진 두 유형은 처음에 끌릴 수 있지만 장기적으로 조율이 필요합니다. 서로의 다른 점을 존중하고 배우려는 자세가 있다면 균형 잡힌 관계가 가능합니다.",
+  "INTJ-ISTP": "둘 다 독립적이고 논리적인 유형으로, 서로의 공간을 존중하는 편안한 관계가 가능합니다. 다만 소통 방식의 차이를 이해하는 것이 중요합니다.",
+  "INTJ-ESTP": "행동파 ESTP와 전략가 INTJ는 서로 다른 방식으로 문제를 해결합니다. 이 차이를 시너지로 만들 수 있다면 좋은 팀이 되지만, 생활 방식의 차이가 갈등의 원인이 될 수 있습니다.",
+  "INTJ-ISFJ": "INTJ의 혁신적 사고와 ISFJ의 안정 추구가 충돌할 수 있지만, 서로 다른 강점을 인정한다면 보완적인 관계가 가능합니다. 소통 방식의 차이를 이해하는 것이 핵심입니다.",
+  "INTJ-ESFJ": "감정과 논리, 전통과 혁신이 만나는 조합입니다. 서로의 가치관 차이가 크지만, 상호 존중을 바탕으로 하면 서로에게 없는 부분을 배울 수 있습니다.",
+  "INTJ-ISTJ": "둘 다 체계적이고 신뢰할 수 있는 유형이지만 접근 방식이 다릅니다. INTJ는 혁신을, ISTJ는 검증된 방법을 선호하여 의견 충돌이 있을 수 있습니다.",
+  "INTJ-ESTJ": "둘 다 목표 달성에 집중하지만 방법론에서 차이가 납니다. 서로의 방식을 인정하고 타협점을 찾는다면 효율적인 파트너십이 가능합니다.",
+
+  "ENTJ-INFP": "결단력 있는 ENTJ와 감성적인 INFP는 서로에게 없는 것을 가진 환상의 조합입니다. ENTJ는 INFP의 꿈을 현실로 만들고, INFP는 ENTJ에게 부드러움과 깊이를 선물합니다.",
+  "ENTJ-INTP": "전략가 ENTJ와 이론가 INTP가 만나면 아이디어를 현실로 만드는 최강의 팀이 됩니다. ENTJ가 방향을 잡고 INTP가 깊이를 더하는 완벽한 조합입니다.",
+  "ENTJ-ENFP": "에너지 넘치는 ENFP와 목표 지향적 ENTJ가 만나면 꿈을 현실로 만드는 파워 커플이 됩니다. ENFP의 창의성과 ENTJ의 실행력이 환상의 시너지를 만듭니다.",
+  "ENTJ-INFJ": "ENTJ의 결단력과 INFJ의 통찰력이 만나면 비전을 실현하는 강력한 팀이 됩니다. 서로의 강점을 존중하며 함께 큰 목표를 향해 나아갈 수 있습니다.",
+  "ENTJ-ENFJ": "두 유형 모두 리더십이 강하고 사람을 이끄는 능력이 있습니다. 함께 큰 비전을 추구할 수 있지만, 주도권 조율이 관계의 열쇠입니다.",
+  "ENTJ-INTJ": "두 전략가가 만나면 어떤 목표든 달성 가능한 드림팀이 됩니다. 서로의 비전과 능력을 인정하며 효율적으로 협력하는 관계가 가능합니다.",
+  "ENTJ-ENTJ": "같은 ENTJ끼리는 서로의 야망과 능력을 깊이 이해합니다. 함께 큰 것을 이룰 수 있지만, 둘 다 양보하지 않으려는 성향에 주의가 필요합니다.",
+  "ENTJ-ENTP": "둘 다 외향적이고 아이디어가 풍부한 유형으로, 함께하면 끊임없이 새로운 프로젝트와 도전을 찾습니다. 서로를 자극하며 성장하는 역동적인 관계입니다.",
+  "ENTJ-ISFP": "리더형 ENTJ와 예술가형 ISFP는 서로 다른 세계를 가지고 있지만, 그 차이에서 매력을 느낄 수 있습니다. ISFP의 감성이 ENTJ에게 여유를 줍니다.",
+  "ENTJ-ESFP": "에너지가 넘치는 두 유형이지만 추구하는 방향이 다릅니다. ENTJ는 미래를, ESFP는 현재를 중시하여 조율이 필요하지만, 서로에게 균형을 줄 수 있습니다.",
+  "ENTJ-ISTP": "둘 다 논리적이고 효율적인 것을 추구합니다. ENTJ의 큰 그림과 ISTP의 실용적 기술이 만나면 좋은 팀이 되지만, 소통 스타일의 차이에 주의가 필요합니다.",
+  "ENTJ-ESTP": "행동력 있는 두 유형이 만나면 빠르게 일을 추진하는 역동적인 관계가 됩니다. 다만 장기적 비전과 즉흥적 행동 사이의 균형이 필요합니다.",
+  "ENTJ-ISFJ": "ENTJ의 변화 추구와 ISFJ의 안정 추구가 충돌할 수 있습니다. 서로의 가치를 인정하는 것이 관계의 핵심이며, 의식적인 소통이 필요합니다.",
+  "ENTJ-ESFJ": "둘 다 사교적이고 조직적이지만 우선순위가 다릅니다. ENTJ는 효율을, ESFJ는 화합을 중시하여 이해가 필요하지만, 서로를 보완할 수 있는 관계입니다.",
+  "ENTJ-ISTJ": "둘 다 체계적이고 책임감이 강하지만, ENTJ는 혁신을, ISTJ는 전통을 선호합니다. 서로의 방식을 존중하면 안정적이면서도 발전적인 관계가 가능합니다.",
+  "ENTJ-ESTJ": "두 유형 모두 결단력 있고 조직적입니다. 함께 효율적으로 일할 수 있지만, 둘 다 자신의 방식을 고수하려는 성향이 있어 유연성이 필요합니다.",
+
+  "INTP-ENTJ": "이론가 INTP와 실행가 ENTJ는 아이디어를 현실로 만드는 최고의 팀입니다. INTP가 개념을 설계하고 ENTJ가 실현하는 완벽한 보완 관계입니다.",
+  "INTP-ESTJ": "의외의 천생연분! INTP의 창의적 이론과 ESTJ의 체계적 실행력이 만나면 놀라운 시너지가 발생합니다. 서로의 강점을 인정하면 최고의 파트너가 됩니다.",
+  "INTP-INFP": "둘 다 내향적이고 사색적인 유형으로, 서로의 내면 세계를 존중합니다. INTP의 논리와 INFP의 감성이 조화를 이루면 깊이 있는 관계가 됩니다.",
+  "INTP-ENFP": "호기심이 넘치는 두 유형이 만나면 끝없는 탐구와 대화가 이어집니다. ENFP의 열정이 INTP를 세상 밖으로 이끌고, INTP의 분석력이 ENFP에게 깊이를 더합니다.",
+  "INTP-INFJ": "직관적인 두 유형이 만나면 말하지 않아도 통하는 깊은 이해가 가능합니다. 지적 대화와 감정적 교류가 균형을 이루는 성숙한 관계가 됩니다.",
+  "INTP-ENFJ": "INTP의 분석력과 ENFJ의 공감 능력이 만나면 서로에게 새로운 관점을 열어주는 관계가 됩니다. ENFJ는 INTP에게 감정의 세계를 보여주고, INTP는 ENFJ에게 객관적 사고를 선물합니다.",
+  "INTP-INTJ": "두 유형 모두 독립적이고 지적인 탐구를 즐깁니다. 깊이 있는 논의와 서로의 공간 존중이 자연스러운 편안한 관계가 가능합니다.",
+  "INTP-INTP": "같은 유형끼리의 만남은 서로를 완벽히 이해할 수 있다는 장점이 있습니다. 지적 대화가 끊이지 않지만, 둘 다 행동보다 사고를 선호하여 실행에 어려움이 있을 수 있습니다.",
+  "INTP-ENTP": "두 유형 모두 논리적이고 가능성을 탐구합니다. 함께하면 아이디어가 끊이지 않고, 서로의 사고를 발전시키는 지적으로 풍요로운 관계가 됩니다.",
+  "INTP-ISFP": "서로 다른 방식으로 세상을 경험하는 두 유형입니다. ISFP의 감각적 경험과 INTP의 이론적 탐구가 만나면 새로운 관점을 발견할 수 있습니다.",
+  "INTP-ESFP": "정반대의 에너지를 가진 두 유형은 초반에 신선한 매력을 느끼지만, 장기적으로는 생활 방식의 차이를 조율해야 합니다. 서로의 세계를 열린 마음으로 탐구하면 성장할 수 있습니다.",
+  "INTP-ISTP": "둘 다 논리적이고 독립적인 유형으로, 서로의 공간을 존중하는 편안한 관계가 가능합니다. 함께 문제를 분석하고 해결하는 과정에서 유대감을 형성합니다.",
+  "INTP-ESTP": "INTP의 이론과 ESTP의 실행력이 만나면 재미있는 조합이 됩니다. 서로 다른 속도감이 있지만, 그 차이를 받아들이면 서로를 보완하는 관계가 됩니다.",
+  "INTP-ISFJ": "INTP의 논리와 ISFJ의 따뜻함이 만나면 서로에게 없는 것을 배울 수 있지만, 소통 방식의 차이가 큽니다. 서로의 언어를 배우려는 노력이 필요합니다.",
+  "INTP-ESFJ": "감정과 논리의 극단적인 만남입니다. 서로의 강점을 인정하면 보완적인 관계가 가능하지만, 기본적인 가치관 차이를 이해하는 데 시간이 필요합니다.",
+  "INTP-ISTJ": "둘 다 논리적이지만 적용 방식이 다릅니다. INTP는 새로운 이론을, ISTJ는 검증된 방법을 선호합니다. 서로의 접근법을 존중하면 안정적인 관계가 가능합니다.",
+
+  "ENTP-INFJ": "ENTP의 독창성과 INFJ의 직관이 만나면 서로에게 끊임없이 영감을 주는 천생연분 관계가 됩니다. 깊은 대화와 새로운 발견이 가득한 매력적인 조합입니다.",
+  "ENTP-INTJ": "두 유형 모두 전략적 사고와 독립성을 가지고 있습니다. 지적 도전을 즐기며 서로를 자극하는 관계로, 함께 혁신적인 아이디어를 만들어냅니다.",
+  "ENTP-INFP": "ENTP의 논리적 탐구와 INFP의 감성적 깊이가 만나면 흥미로운 조합이 됩니다. 서로 다른 관점에서 세상을 바라보면서 시야를 넓힐 수 있습니다.",
+  "ENTP-ENFP": "두 유형 모두 가능성을 탐구하고 새로운 것을 시도합니다. 함께라면 모험과 아이디어가 끊이지 않는 활기찬 관계가 되지만, 현실적인 부분에서 균형이 필요합니다.",
+  "ENTP-ENFJ": "사교적이고 에너지 넘치는 두 유형이 만나면 주변을 밝히는 활기찬 커플이 됩니다. 서로의 아이디어와 비전을 응원하며 함께 성장합니다.",
+  "ENTP-ENTJ": "두 유형 모두 대담하고 야심 찬 목표를 추구합니다. 함께하면 세상을 바꿀 수 있을 것 같은 에너지가 넘치는 역동적인 관계입니다.",
+  "ENTP-INTP": "두 유형 모두 논리적 탐구를 즐깁니다. 끝없는 토론과 아이디어 교환이 이어지며, 지적으로 가장 자극적인 관계 중 하나가 됩니다.",
+  "ENTP-ENTP": "같은 ENTP끼리 만나면 폭발적인 아이디어와 토론이 끊이지 않습니다. 서로를 완벽히 이해하지만, 마무리를 짓는 것이 공통된 과제입니다.",
+  "ENTP-ISFP": "서로 다른 에너지를 가진 두 유형입니다. ENTP의 토론 스타일이 ISFP에게 부담이 될 수 있지만, 서로의 차이를 존중하면 새로운 세계를 열어줄 수 있습니다.",
+  "ENTP-ESFP": "둘 다 외향적이고 활동적이지만 관심사가 다릅니다. ENTP는 아이디어를, ESFP는 경험을 중시합니다. 균형을 찾으면 다채로운 관계가 가능합니다.",
+  "ENTP-ISTP": "둘 다 논리적이고 유연한 사고를 가지고 있습니다. 함께 문제를 해결하고 새로운 것을 시도하는 과정에서 유대감을 형성할 수 있습니다.",
+  "ENTP-ESTP": "행동력 있는 두 유형이 만나면 빠르게 새로운 것을 시도하는 역동적인 관계가 됩니다. 다만 깊이 있는 감정적 교류에 의식적 노력이 필요합니다.",
+  "ENTP-ISFJ": "정반대의 성향을 가진 두 유형은 서로에게 없는 것을 배울 수 있지만, 기본적인 생활 방식과 소통 방식의 차이가 커서 많은 노력이 필요합니다.",
+  "ENTP-ESFJ": "사교적인 공통점이 있지만, 대화의 방향과 가치관이 다릅니다. ENTP는 아이디어를, ESFJ는 감정과 조화를 중시합니다. 서로를 이해하려는 노력이 관계의 열쇠입니다.",
+  "ENTP-ISTJ": "혁신과 전통이 만나는 조합입니다. 서로의 방식이 매우 다르지만, 각자의 강점을 인정하면 보완적인 관계가 가능합니다.",
+  "ENTP-ESTJ": "둘 다 논리적이고 결단력 있지만, 접근 방식이 다릅니다. ENTP는 가능성을, ESTJ는 검증된 방법을 선호합니다. 상호 존중이 중요합니다.",
+
+  // SP pairs
+  "ISFP-ENFJ": "예술적인 ISFP와 따뜻한 ENFJ는 서로에게 깊이 끌리는 천생연분입니다. ENFJ는 ISFP의 재능을 세상에 보여주도록 돕고, ISFP는 ENFJ에게 진정한 아름다움과 여유를 선물합니다.",
+  "ISFP-ESFJ": "ISFP의 섬세함과 ESFJ의 따뜻한 돌봄이 만나면 안정적이고 조화로운 관계가 됩니다. 서로를 있는 그대로 받아들이며 편안한 일상을 함께 만들어갑니다.",
+  "ISFP-ESTJ": "다른 성향의 두 유형이지만, ESTJ의 안정감과 ISFP의 유연함이 만나면 서로를 보완하는 좋은 파트너가 됩니다. 서로의 차이를 매력으로 느낄 수 있는 조합입니다.",
+  "ISFP-INTJ": "감성과 논리의 만남입니다. 처음에는 소통이 어려울 수 있지만, 서로의 세계를 이해하게 되면 깊이 있는 관계가 가능합니다.",
+  "ISFP-ENTJ": "리더형 ENTJ와 예술가형 ISFP는 서로 다른 세계를 가지고 있지만, 그 차이에서 매력을 느낄 수 있습니다.",
+  "ISFP-INTP": "서로 다른 방식으로 세상을 경험하는 두 유형입니다. 열린 마음으로 서로의 관점을 탐구하면 새로운 발견이 가능합니다.",
+  "ISFP-ENTP": "ENTP의 활발한 에너지와 ISFP의 조용한 감성은 서로 다르지만, 그 차이가 새로운 시각을 열어줄 수 있습니다.",
+  "ISFP-ISFJ": "둘 다 따뜻하고 배려심 깊은 유형으로, 안정적이고 편안한 관계가 가능합니다. 서로를 돌보며 조용한 행복을 나눌 수 있습니다.",
+  "ISFP-ISTJ": "ISFP의 유연함과 ISTJ의 체계성이 만나면 서로를 보완할 수 있습니다. 다만 생활 방식의 차이를 조율하는 것이 중요합니다.",
+  "ISFP-ISFP": "같은 유형끼리는 서로를 깊이 이해하지만, 둘 다 갈등을 회피하는 성향이 있어 소통에 노력이 필요합니다.",
+  "ISFP-ESFP": "둘 다 현재를 즐기고 감각적인 경험을 좋아합니다. 함께하면 즐거운 시간을 보낼 수 있지만, 미래 계획에 대한 대화가 필요합니다.",
+  "ISFP-ISTP": "둘 다 조용하고 독립적인 유형으로, 서로의 공간을 존중하는 관계가 가능합니다. 함께 활동하며 유대감을 키울 수 있습니다.",
+  "ISFP-ESTP": "ESTP의 활동적인 에너지와 ISFP의 감성이 만나면 재미있지만, 장기적으로 감정적 깊이에 대한 차이가 있을 수 있습니다.",
+  "ISFP-INFP": "둘 다 감성적이지만, 서로의 세계관과 소통 방식에 차이가 있어 오해가 생길 수 있습니다. NF와 SP의 근본적인 가치관 차이를 이해하는 것이 필요합니다.",
+  "ISFP-ENFP": "ENFP의 열정이 ISFP에게 부담이 될 수 있고, ISFP의 조용함이 ENFP에게 답답하게 느껴질 수 있습니다. 서로의 에너지 레벨을 이해하는 것이 중요합니다.",
+  "ISFP-INFJ": "겉으로는 비슷해 보이지만 내면의 세계가 매우 다릅니다. INFJ의 추상적 사고와 ISFP의 현실적 감각이 소통의 장벽이 될 수 있습니다.",
+
+  "ESFP-ISFJ": "ESFP의 활발함과 ISFJ의 따뜻한 돌봄이 만나면 서로를 보완하는 천생연분이 됩니다. ESFP는 ISFJ에게 즐거움을, ISFJ는 ESFP에게 안정감을 줍니다.",
+  "ESFP-ISTJ": "정반대의 성향이지만 오히려 서로에게 없는 것을 채워주는 매력적인 조합입니다. ESFP의 유연함과 ISTJ의 안정감이 만나면 균형 잡힌 관계가 됩니다.",
+  "ESFP-INTJ": "매우 다른 두 유형이지만 처음에 강하게 끌릴 수 있습니다. 장기적으로는 생활 방식의 차이를 이해하고 조율하는 노력이 필요합니다.",
+  "ESFP-ENTJ": "에너지 넘치는 두 유형이지만 추구하는 것이 다릅니다. 서로의 다른 점을 존중하면 균형 있는 관계가 가능합니다.",
+  "ESFP-INTP": "정반대의 에너지를 가진 두 유형은 서로에게 신선한 매력을 느낄 수 있지만, 소통 방식의 차이가 큽니다.",
+  "ESFP-ENTP": "둘 다 외향적이고 활동적이지만, ENTP는 아이디어를, ESFP는 경험을 중시합니다. 서로의 관심사를 존중하면 다채로운 관계가 됩니다.",
+  "ESFP-ESFJ": "둘 다 사교적이고 따뜻한 유형으로, 사람들과 함께하는 시간을 즐깁니다. 서로의 사교성을 이해하고 지지하는 관계가 가능합니다.",
+  "ESFP-ESTJ": "ESFP의 자유로움과 ESTJ의 체계성이 만나면 균형 잡힌 관계가 가능하지만, 생활 방식에 대한 조율이 필요합니다.",
+  "ESFP-ISFP": "둘 다 감각적이고 현재를 즐기는 유형으로, 함께하면 즐거운 시간을 보낼 수 있지만 성장을 위한 의식적 노력이 필요합니다.",
+  "ESFP-ESFP": "같은 유형끼리의 만남은 즐거움이 가득하지만, 현실적인 문제에 함께 직면해야 할 때 어려움이 있을 수 있습니다.",
+  "ESFP-ISTP": "둘 다 유연하고 현재를 즐기지만, 감정 표현 방식에 차이가 있습니다. 서로의 소통 스타일을 이해하는 것이 중요합니다.",
+  "ESFP-ESTP": "에너지 넘치는 두 유형이 만나면 모험과 재미가 가득한 관계가 됩니다. 다만 깊은 감정적 교류를 위한 노력이 필요합니다.",
+  "ESFP-ISFJ": "ESFP의 활발함과 ISFJ의 안정감이 만나면 서로를 보완하는 관계가 됩니다. 서로의 속도를 맞추는 것이 관계의 열쇠입니다.",
+  "ESFP-INFP": "감성적인 공통점이 있지만, 에너지 레벨과 소통 방식의 차이가 큽니다. ESFP의 활동성이 INFP에게 부담이 될 수 있습니다.",
+  "ESFP-ENFP": "둘 다 외향적이고 즐거움을 추구하지만, 깊이와 관심사에서 차이가 있습니다. 표면적으로는 잘 맞아도 내면적 교류에 차이를 느낄 수 있습니다.",
+  "ESFP-INFJ": "매우 다른 두 유형으로, INFJ의 깊이와 ESFP의 현재 지향이 충돌할 수 있습니다. 서로를 이해하는 데 많은 시간과 노력이 필요합니다.",
+  "ESFP-ENFJ": "ENFJ의 헌신과 ESFP의 자유로움이 충돌할 수 있습니다. 서로의 가치관 차이를 인정하고 조율하는 것이 관계 유지의 핵심입니다.",
+
+  "ISTP-ESFJ": "ISTP의 논리적 독립성과 ESFJ의 따뜻한 돌봄이 만나면 서로에게 없는 것을 채워주는 천생연분이 됩니다. 서로의 강점이 상대방의 약점을 보완합니다.",
+  "ISTP-ESTJ": "둘 다 실용적이고 효율적인 것을 추구합니다. ESTJ의 체계성과 ISTP의 유연한 문제해결 능력이 만나면 훌륭한 팀이 됩니다.",
+  "ISTP-INTJ": "둘 다 독립적이고 논리적인 유형으로, 서로의 공간을 존중하는 편안한 관계가 가능합니다.",
+  "ISTP-ENTJ": "ENTJ의 리더십과 ISTP의 실용적 기술이 만나면 효율적인 팀이 됩니다.",
+  "ISTP-INTP": "두 유형 모두 논리적이고 독립적입니다. 서로의 공간을 존중하며 지적 교류를 즐기는 편안한 관계가 가능합니다.",
+  "ISTP-ENTP": "둘 다 논리적이고 새로운 것을 시도합니다. 함께 문제를 해결하는 과정에서 유대감을 형성할 수 있습니다.",
+  "ISTP-ISFJ": "ISTP의 독립성과 ISFJ의 헌신이 만나면 서로를 보완할 수 있지만, 감정 표현 방식의 차이에 주의가 필요합니다.",
+  "ISTP-ISTJ": "둘 다 실용적이고 조용한 유형으로, 안정적인 관계가 가능합니다. 서로의 독립적인 시간을 존중하는 것이 중요합니다.",
+  "ISTP-ISFP": "둘 다 조용하고 독립적이지만, 의사결정 방식(논리 vs 감정)에서 차이가 있습니다. 서로의 방식을 존중하면 편안한 관계가 가능합니다.",
+  "ISTP-ESFP": "ESFP의 활발함과 ISTP의 조용함이 만나면 서로 다른 에너지를 교환할 수 있지만, 소통 방식의 차이에 주의가 필요합니다.",
+  "ISTP-ISTP": "같은 유형끼리는 서로의 독립성을 완벽히 이해하지만, 둘 다 감정 표현에 서툴러 관계의 깊이를 더하는 데 의식적 노력이 필요합니다.",
+  "ISTP-ESTP": "둘 다 실용적이고 행동 지향적입니다. 함께 활동을 즐기며 유대감을 키울 수 있지만, 감정적 소통을 위한 노력이 필요합니다.",
+  "ISTP-INFP": "매우 다른 소통 방식을 가진 두 유형입니다. INFP의 감정적 깊이를 ISTP가 이해하기 어려울 수 있어 많은 노력이 필요합니다.",
+  "ISTP-ENFP": "에너지 레벨과 관심사가 매우 다른 두 유형입니다. 서로의 세계를 이해하는 데 시간과 인내가 필요합니다.",
+  "ISTP-INFJ": "내향적인 공통점이 있지만, 소통 방식과 가치관의 차이가 큽니다. 서로를 이해하려면 의식적인 노력이 필요합니다.",
+  "ISTP-ENFJ": "매우 다른 유형으로, ENFJ의 감정적 접근과 ISTP의 논리적 접근이 충돌할 수 있습니다. 서로의 언어를 배우는 것이 관계의 핵심입니다.",
+
+  "ESTP-ISFJ": "ESTP의 대담함과 ISFJ의 안정감이 만나면 흥미로운 천생연분이 됩니다. ESTP는 ISFJ에게 새로운 경험을, ISFJ는 ESTP에게 따뜻한 안식처를 제공합니다.",
+  "ESTP-ISTJ": "둘 다 실용적이고 현실적인 유형입니다. ESTP의 모험심과 ISTJ의 안정감이 만나면 서로를 보완하는 좋은 파트너가 됩니다.",
+  "ESTP-INTJ": "행동파 ESTP와 전략가 INTJ는 서로 다른 방식으로 세상에 접근합니다. 차이를 시너지로 만들면 좋은 팀이 됩니다.",
+  "ESTP-ENTJ": "둘 다 행동력이 있고 결단력 있는 유형입니다. 함께하면 빠르게 일을 추진하는 역동적인 관계가 됩니다.",
+  "ESTP-INTP": "ESTP의 실행력과 INTP의 분석력이 만나면 재미있는 조합이 됩니다. 서로의 속도감 차이를 이해하는 것이 중요합니다.",
+  "ESTP-ENTP": "에너지 넘치는 두 유형이 만나면 빠르게 새로운 것을 시도하는 관계가 됩니다. 깊이 있는 감정적 교류를 위한 노력이 필요합니다.",
+  "ESTP-ESFJ": "둘 다 사교적이고 활동적이지만, 추구하는 가치가 다릅니다. ESTP는 자유를, ESFJ는 조화를 중시합니다. 균형이 필요합니다.",
+  "ESTP-ESTJ": "둘 다 실용적이고 행동 지향적입니다. 함께 효율적으로 일할 수 있지만, 방식의 차이(자유 vs 체계)에 대한 조율이 필요합니다.",
+  "ESTP-ISFP": "ESTP의 활동적 에너지와 ISFP의 감성이 만나면 재미있는 관계가 가능하지만, 감정적 깊이에 대한 차이가 있을 수 있습니다.",
+  "ESTP-ESFP": "둘 다 현재를 즐기고 활동적인 유형으로, 함께하면 모험이 가득합니다. 다만 장기적인 계획에 대한 대화가 필요합니다.",
+  "ESTP-ISTP": "둘 다 실용적이고 논리적인 유형으로, 함께 활동을 즐기며 유대감을 키울 수 있습니다.",
+  "ESTP-ESTP": "같은 유형끼리의 만남은 모험과 즐거움이 가득하지만, 깊은 감정적 교류를 위한 의식적 노력이 필요합니다.",
+  "ESTP-INFP": "매우 다른 세계관을 가진 두 유형입니다. 소통 방식과 가치관의 차이가 커서 관계 유지에 많은 노력이 필요합니다.",
+  "ESTP-ENFP": "둘 다 외향적이지만 관심사와 깊이에서 차이가 있습니다. 표면적으로는 잘 맞아도 내면적 교류에서 차이를 느낄 수 있습니다.",
+  "ESTP-INFJ": "정반대의 유형으로, INFJ의 직관적 깊이와 ESTP의 현실적 행동이 충돌할 수 있습니다. 서로를 이해하는 데 많은 시간이 필요합니다.",
+  "ESTP-ENFJ": "ENFJ의 감정적 리더십과 ESTP의 자유로운 행동 방식이 충돌할 수 있습니다. 서로의 가치관을 존중하는 것이 관계의 열쇠입니다.",
+
+  // SJ pairs
+  "ISFJ-ESFP": "ISFJ의 따뜻한 안정감과 ESFP의 즐거운 에너지가 만나면 서로에게 없는 것을 채워주는 완벽한 조합이 됩니다. 일상에 행복이 가득한 관계입니다.",
+  "ISFJ-ESTP": "ISFJ의 헌신과 ESTP의 대담함이 만나면 안정과 모험의 균형이 잡힌 관계가 됩니다. 서로에게 새로운 세계를 열어주는 천생연분입니다.",
+  "ISFJ-ISFJ": "같은 유형끼리는 서로의 헌신과 따뜻함을 깊이 이해합니다. 안정적이고 조화로운 관계가 자연스럽게 만들어지지만, 변화를 추구하는 데 함께 노력이 필요합니다.",
+  "ISFJ-ESFJ": "둘 다 따뜻하고 배려심 깊은 유형으로, 서로를 돌보며 안정적인 관계를 만듭니다. 조화와 전통을 중시하는 공통된 가치관을 공유합니다.",
+  "ISFJ-ISTJ": "둘 다 책임감 있고 신뢰할 수 있는 유형으로, 안정적이고 예측 가능한 관계가 가능합니다. 서로의 헌신을 높이 평가합니다.",
+  "ISFJ-ESTJ": "ISFJ의 따뜻함과 ESTJ의 체계성이 만나면 안정적이면서도 조직적인 관계가 됩니다. 서로를 보완하며 든든한 파트너십을 만들어갑니다.",
+  "ISFJ-ISFP": "둘 다 따뜻하고 배려심 깊지만, 의사결정 방식에서 차이가 있습니다. 서로의 방식을 존중하면 편안한 관계가 가능합니다.",
+  "ISFJ-ISTP": "ISFJ의 따뜻함과 ISTP의 독립성이 만나면 서로를 보완할 수 있지만, 감정 표현에 대한 기대치 차이에 주의가 필요합니다.",
+  "ISFJ-INTJ": "ISFJ의 전통 중시와 INTJ의 혁신 추구가 충돌할 수 있습니다. 서로의 가치를 인정하는 것이 관계의 핵심입니다.",
+  "ISFJ-ENTJ": "ISFJ의 안정 추구와 ENTJ의 변화 추구가 충돌할 수 있어 의식적인 소통이 필요합니다.",
+  "ISFJ-INTP": "소통 방식의 차이가 큰 두 유형입니다. ISFJ의 감정적 접근과 INTP의 논리적 접근을 조율하는 것이 관계의 과제입니다.",
+  "ISFJ-ENTP": "매우 다른 성향의 두 유형으로, 서로를 이해하는 데 많은 시간과 노력이 필요합니다.",
+  "ISFJ-INFP": "겉으로는 비슷해 보이지만 내면의 우선순위가 다릅니다. NF의 이상주의와 SJ의 현실주의가 충돌할 수 있어 서로의 가치관을 이해하려는 노력이 필요합니다.",
+  "ISFJ-ENFP": "ENFP의 자유로운 에너지와 ISFJ의 안정 추구가 충돌할 수 있습니다. 서로의 속도와 방식을 맞추려는 의식적 노력이 필요합니다.",
+  "ISFJ-INFJ": "비슷해 보이지만 직관(N)과 감각(S)의 차이가 소통에 영향을 줍니다. INFJ의 추상적 사고와 ISFJ의 구체적 사고 사이의 간극을 이해해야 합니다.",
+  "ISFJ-ENFJ": "둘 다 타인을 돌보는 유형이지만, 에너지 레벨과 접근 방식의 차이가 있습니다. ENFJ의 적극적 리더십이 ISFJ에게 부담이 될 수 있습니다.",
+
+  "ESFJ-ISFP": "ESFJ의 따뜻한 돌봄과 ISFP의 섬세한 감성이 만나면 서로를 감싸주는 아름다운 관계가 됩니다. 천생연분의 조화로운 궁합입니다.",
+  "ESFJ-ISTP": "ESFJ의 사교성과 ISTP의 독립적인 매력이 만나면 서로에게 없는 것을 채워주는 천생연분이 됩니다.",
+  "ESFJ-ISFJ": "둘 다 따뜻하고 헌신적인 유형으로, 서로를 돌보며 안정적인 관계를 만듭니다. 공통된 가치관으로 조화로운 일상을 만들어갑니다.",
+  "ESFJ-ESFJ": "같은 유형끼리는 서로의 따뜻함과 사교성을 깊이 이해합니다. 함께 사람들을 돌보며 조화로운 환경을 만들지만, 갈등 시 양보가 어려울 수 있습니다.",
+  "ESFJ-ISTJ": "둘 다 전통과 안정을 중시하는 유형으로, 신뢰할 수 있는 파트너십을 만들어갑니다. 서로의 헌신과 책임감을 높이 평가합니다.",
+  "ESFJ-ESTJ": "둘 다 조직적이고 사교적인 유형으로, 함께 안정적이고 활동적인 관계를 만들 수 있습니다. 공통된 가치관이 많아 편안한 관계가 가능합니다.",
+  "ESFJ-ESFP": "둘 다 사교적이고 사람을 좋아하는 유형으로, 함께하면 즐거운 시간을 보낼 수 있습니다. 서로의 사교적 에너지를 이해합니다.",
+  "ESFJ-ESTP": "사교적인 공통점이 있지만 추구하는 가치가 다릅니다. 서로의 차이를 이해하고 조율하면 균형 있는 관계가 가능합니다.",
+  "ESFJ-INTJ": "감정과 논리, 전통과 혁신의 만남입니다. 서로의 가치관 차이가 크지만, 상호 존중을 바탕으로 배울 수 있습니다.",
+  "ESFJ-ENTJ": "둘 다 사교적이고 조직적이지만, 우선순위가 다릅니다. ESFJ는 화합을, ENTJ는 효율을 중시합니다.",
+  "ESFJ-INTP": "매우 다른 소통 방식을 가진 두 유형입니다. 감정과 논리의 간극을 좁히는 데 많은 노력이 필요합니다.",
+  "ESFJ-ENTP": "사교적인 공통점이 있지만 대화의 방향과 가치관이 다릅니다. 서로를 이해하려는 의식적 노력이 관계의 열쇠입니다.",
+  "ESFJ-INFP": "둘 다 감정을 중시하지만, 소통 방식과 가치관의 차이가 큽니다. INFP의 이상주의와 ESFJ의 현실주의가 충돌할 수 있습니다.",
+  "ESFJ-ENFP": "둘 다 사교적이지만, ENFP의 자유로움과 ESFJ의 체계 추구가 충돌할 수 있습니다. 서로의 방식을 존중하는 것이 중요합니다.",
+  "ESFJ-INFJ": "비슷해 보이지만 근본적인 사고 방식(감각 vs 직관)의 차이가 소통에 영향을 줍니다. 서로의 관점을 이해하려는 노력이 필요합니다.",
+  "ESFJ-ENFJ": "둘 다 따뜻하고 사교적이지만, 리더십 스타일과 접근 방식의 차이가 있습니다. 서로의 영역을 존중하면 좋은 관계가 가능합니다.",
+
+  "ISTJ-ESFP": "ISTJ의 안정감과 ESFP의 활기가 만나면 서로에게 없는 것을 채워주는 천생연분이 됩니다. 일상에 균형과 즐거움이 가득한 관계입니다.",
+  "ISTJ-ESTP": "둘 다 실용적이고 현실적입니다. ESTP의 모험심이 ISTJ의 일상에 활력을 더하고, ISTJ의 안정감이 ESTP에게 든든한 기반을 제공합니다.",
+  "ISTJ-ISFJ": "둘 다 책임감 있고 헌신적인 유형으로, 안정적이고 신뢰할 수 있는 관계가 자연스럽게 형성됩니다. 서로의 성실함을 높이 평가합니다.",
+  "ISTJ-ESFJ": "전통과 가족을 중시하는 공통된 가치관으로 안정적인 관계를 만듭니다. 서로의 헌신과 책임감을 이해하고 존중합니다.",
+  "ISTJ-ISTJ": "같은 유형끼리는 서로의 체계성과 신뢰성을 완벽히 이해합니다. 안정적이고 예측 가능한 관계가 가능하지만, 유연성을 위한 의식적 노력이 필요합니다.",
+  "ISTJ-ESTJ": "둘 다 체계적이고 책임감 있는 유형으로, 함께 효율적이고 안정적인 관계를 만들어갑니다. 공통된 가치관이 관계의 든든한 기반이 됩니다.",
+  "ISTJ-ISFP": "ISTJ의 체계성과 ISFP의 유연함은 서로를 보완할 수 있지만, 생활 방식의 차이를 조율하는 것이 중요합니다.",
+  "ISTJ-ISTP": "둘 다 실용적이고 독립적인 유형으로, 안정적이고 편안한 관계가 가능합니다. 서로의 공간을 존중합니다.",
+  "ISTJ-INTJ": "둘 다 체계적이지만 ISTJ는 전통을, INTJ는 혁신을 선호합니다. 접근 방식의 차이를 이해하는 것이 중요합니다.",
+  "ISTJ-ENTJ": "둘 다 목표 지향적이고 체계적이지만, 변화에 대한 태도가 다릅니다. 서로의 방식을 존중하면 효율적인 관계가 가능합니다.",
+  "ISTJ-INTP": "둘 다 논리적이지만, 검증된 방법 vs 새로운 이론의 차이가 있습니다. 서로의 접근법을 인정하면 안정적인 관계가 가능합니다.",
+  "ISTJ-ENTP": "혁신과 전통의 충돌이 있을 수 있지만, 각자의 강점을 인정하면 보완적인 관계가 가능합니다.",
+  "ISTJ-INFP": "실용주의와 이상주의의 만남입니다. 가치관과 소통 방식의 차이가 커서 서로를 이해하는 데 많은 노력이 필요합니다.",
+  "ISTJ-ENFP": "매우 다른 에너지와 가치관을 가진 두 유형입니다. ENFP의 자유로움과 ISTJ의 체계성이 충돌할 수 있어 많은 조율이 필요합니다.",
+  "ISTJ-INFJ": "겉으로는 비슷해 보이지만 사고 방식의 근본적 차이가 있습니다. 직관과 감각의 간극을 이해하려는 노력이 필요합니다.",
+  "ISTJ-ENFJ": "서로 다른 리더십 스타일과 소통 방식을 가지고 있습니다. 서로의 가치관을 존중하면 보완적인 관계가 가능합니다.",
+
+  "ESTJ-INTP": "ESTJ의 실행력과 INTP의 이론적 깊이가 만나면 놀라운 시너지가 발생하는 천생연분입니다. ESTJ가 체계를 잡고 INTP가 혁신을 더합니다.",
+  "ESTJ-ISFP": "다른 성향이지만 ESTJ의 안정감과 ISFP의 감성이 조화를 이루면 서로를 보완하는 따뜻한 관계가 됩니다.",
+  "ESTJ-ISTP": "둘 다 실용적이고 논리적입니다. ESTJ의 체계와 ISTP의 유연한 기술이 만나면 효율적인 파트너십이 가능합니다.",
+  "ESTJ-ISFJ": "둘 다 전통과 안정을 중시하며, 서로의 헌신과 책임감을 높이 평가합니다. 안정적이고 신뢰할 수 있는 관계가 됩니다.",
+  "ESTJ-ESFJ": "둘 다 사교적이고 체계적인 유형으로, 공통된 가치관을 바탕으로 활동적이고 안정적인 관계를 만들어갑니다.",
+  "ESTJ-ISTJ": "둘 다 책임감 있고 체계적인 유형으로, 함께 효율적이고 안정적인 관계를 만들어갑니다. 공통된 가치관이 강한 유대를 형성합니다.",
+  "ESTJ-ESTJ": "같은 유형끼리는 서로의 체계성과 결단력을 이해합니다. 효율적으로 함께 일할 수 있지만, 둘 다 양보하지 않으려는 성향에 주의가 필요합니다.",
+  "ESTJ-ESFP": "ESTJ의 체계와 ESFP의 자유로움이 만나면 균형 잡힌 관계가 가능하지만, 생활 방식에 대한 조율이 필요합니다.",
+  "ESTJ-ESTP": "둘 다 실용적이고 행동 지향적이지만, 체계 vs 자유의 차이가 있습니다. 서로의 방식을 존중하면 효율적인 관계가 가능합니다.",
+  "ESTJ-INTJ": "둘 다 목표 달성에 집중하지만 방법론이 다릅니다. ESTJ는 검증된 방법을, INTJ는 혁신을 선호합니다.",
+  "ESTJ-ENTJ": "둘 다 결단력 있고 조직적이지만, 자신의 방식을 고수하려는 성향이 있어 유연성이 필요합니다.",
+  "ESTJ-ENTP": "논리적 공통점이 있지만, 검증된 방법 vs 새로운 가능성의 차이가 있습니다. 상호 존중이 중요합니다.",
+  "ESTJ-INFP": "실용주의와 이상주의의 극단적 만남입니다. 가치관과 소통 방식의 차이가 매우 커서 관계 유지에 큰 노력이 필요합니다.",
+  "ESTJ-ENFP": "ENFP의 자유로움과 ESTJ의 체계성이 크게 충돌할 수 있습니다. 서로의 가치관을 인정하는 것이 관계의 첫 걸음입니다.",
+  "ESTJ-INFJ": "현실주의와 이상주의의 만남으로, 근본적인 가치관과 소통 방식의 차이가 큽니다. 많은 이해와 노력이 필요합니다.",
+  "ESTJ-ENFJ": "둘 다 리더십이 강하지만 방향이 다릅니다. ESTJ는 효율을, ENFJ는 화합을 추구하여 조율이 필요합니다."
+};
+
+// Lookup function - tries both orderings
+function getGrade(a, b) {
+  const g = matrix[a] && matrix[a][b];
+  return g || "mid"; // fallback
+}
+
+function getDesc(a, b) {
+  return DESC[a + "-" + b] || DESC[b + "-" + a] || "두 유형의 조합은 서로의 차이를 이해하고 존중할 때 좋은 관계를 만들어갈 수 있습니다. 열린 마음으로 소통하며 함께 성장해보세요!";
+}
+
+function generateDetail(a, b, gradeKey) {
+  const ia = TYPE_INFO[a] || {};
+  const ib = TYPE_INFO[b] || {};
+  const isSame = a === b;
+
+  const templates = {
+    best: {
+      feature: isSame
+        ? `${a}(${ia.nick})끼리의 만남은 서로를 거울처럼 이해하는 특별한 관계입니다. ${ia.core}을 공유하는 두 사람은 말하지 않아도 통하는 깊은 유대감을 느끼며, 함께할수록 서로의 세계를 더욱 풍요롭게 만들어갑니다.`
+        : `${a}(${ia.nick})와 ${b}(${ib.nick})는 서로의 차이가 완벽한 보완 관계를 이루는 천생연분입니다. ${ia.core}을 가진 ${a}와 ${ib.core}을 가진 ${b}는 함께할수록 더욱 빛나며, 각자의 부족한 점을 자연스럽게 채워줍니다. 처음 만남부터 강한 끌림을 느끼는 경우가 많은 황금 조합입니다.`,
+      pros: isSame
+        ? [`서로의 ${ia.pros[0]}을 깊이 이해하고 공감할 수 있습니다`,`같은 가치관과 관심사로 대화가 끊이지 않습니다`,`상대방을 통해 자신의 강점과 성장 가능성을 발견합니다`,`같은 유형이기에 서로의 필요를 직관적으로 알아챕니다`]
+        : [`${a}의 ${ia.pros[0]}이 ${b}에게 든든한 지지가 됩니다`,`${b}의 ${ib.pros[0]}이 ${a}의 삶을 풍요롭게 만들어줍니다`,`서로 다른 강점이 시너지를 이루며 함께라면 더 강해집니다`,`갈등이 생겨도 서로에 대한 깊은 이해로 빠르게 회복합니다`],
+      cons: isSame
+        ? [`같은 약점을 공유해 서로의 단점이 증폭될 수 있습니다`,`${ia.cons[0]} 성향이 둘 다 있어 이 부분의 갈등이 장기화될 수 있습니다`]
+        : [`${a}의 ${ia.cons[0]} 성향이 때로 ${b}를 답답하게 만들 수 있습니다`,`${b}의 ${ib.cons[0]} 경향을 ${a}가 완전히 이해하기까지 시간이 필요합니다`],
+      tips: [`${a}는 ${ia.want[0]}을(를) 원하고, ${b}는 ${ib.want[0]}을(를) 원한다는 것을 항상 기억하세요`,`천생연분이라도 노력 없이 유지되지 않습니다. 꾸준한 대화로 관계를 가꾸어 가세요`,`서로의 다름을 단점이 아닌 '나를 완성시켜주는 강점'으로 바라보는 시각을 유지하세요`]
+    },
+    good: {
+      feature: isSame
+        ? `${a}(${ia.nick})끼리는 서로를 깊이 이해하는 편안한 관계를 만들어갑니다. 공통된 가치관을 바탕으로 자연스러운 유대가 형성되지만, 같은 약점도 공유하므로 의식적인 성장 노력이 필요합니다.`
+        : `${a}(${ia.nick})와 ${b}(${ib.nick})는 공통점과 차이점이 적절히 균형을 이루어 좋은 관계로 발전할 수 있는 조합입니다. 서로에게 배울 점이 많으며, 의지와 노력에 따라 매우 깊은 관계로 성장할 수 있습니다.`,
+      pros: [`${a}의 ${ia.pros[0]}과 ${b}의 ${ib.pros[0]}이 서로를 보완하며 시너지를 만들어냅니다`,`서로 다른 관점을 통해 함께 새로운 아이디어와 시각을 발견합니다`,`깊이 알아갈수록 서로에 대한 존중과 애정이 더욱 깊어지는 관계입니다`],
+      cons: [`${a}의 ${ia.cons[0]} 경향과 ${b}의 ${ib.cons[0]} 성향이 때로 충돌할 수 있습니다`,`초반에는 서로의 소통 방식 차이에 적응하는 시간이 필요합니다`],
+      tips: [`${a}가 원하는 것(${ia.want[0]})을 ${b}가, ${b}가 원하는 것(${ib.want[0]})을 ${a}가 서로 챙겨주세요`,`공통 관심사를 찾아 함께 시간을 보내는 것이 관계 발전의 핵심입니다`,`갈등 시에는 먼저 상대의 의도를 물어보는 습관이 오해를 줄여줍니다`]
+    },
+    mid: {
+      feature: isSame
+        ? `${a}(${ia.nick})끼리는 서로를 잘 이해하면서도 같은 약점을 공유하는 반반의 관계입니다. 서로의 필요를 잘 알지만, 그렇기 때문에 오히려 같은 부분에서 함께 어려움을 겪을 수 있습니다.`
+        : `${a}(${ia.nick})와 ${b}(${ib.nick})는 잘 맞는 부분과 안 맞는 부분이 공존하는 반반의 조합입니다. 특정 영역에서는 잘 통하지만 다른 영역에서는 상당한 차이를 느낄 수 있습니다. 서로에 대한 이해와 노력에 따라 결과가 크게 달라질 수 있는 관계입니다.`,
+      pros: [`잘 통하는 영역에서는 서로에게 좋은 자극과 에너지를 줄 수 있습니다`,`서로의 차이를 통해 새로운 시각을 배울 수 있는 성장 기회가 있습니다`],
+      cons: [`${a}의 ${ia.cons[0]}과 ${b}의 ${ib.cons[0]}이 서로를 불편하게 만드는 주요 원인입니다`,`소통 방식의 차이로 같은 말이 다르게 해석되어 오해가 생기기 쉽습니다`,`기대치를 조율하지 않으면 반복적인 실망이 쌓일 수 있습니다`],
+      tips: [`서로의 다름을 먼저 인정하고 '틀린 것이 아닌 다른 것'으로 보는 연습을 하세요`,`${a}가 원하는 것(${ia.want[0]})과 ${b}가 원하는 것(${ib.want[0]})이 다름을 솔직하게 이야기하세요`,`갈등 시에는 잠시 시간을 두고 감정이 가라앉은 후 대화하는 것이 효과적입니다`]
+    },
+    low: {
+      feature: isSame
+        ? `${a}(${ia.nick})끼리는 공통된 약점이 관계에서 반복적으로 문제가 될 수 있는 조합입니다. 서로를 잘 이해하면서도, 그 이해가 오히려 서로의 단점을 더 명확하게 보이게 만들 수 있습니다.`
+        : `${a}(${ia.nick})와 ${b}(${ib.nick})는 서로 다른 방식으로 세상을 바라보아 일상적인 부분에서도 마찰이 생길 수 있는 조합입니다. ${ia.core}을 중시하는 ${a}와 ${ib.core}을 중시하는 ${b}는 근본적인 관점 차이로 충돌이 잦을 수 있습니다. 최악은 아니지만, 관계를 유지하려면 상당한 노력이 필요합니다.`,
+      pros: [`정반대의 관점이 때로는 서로에게 신선하고 새로운 자극이 됩니다`,`이 관계를 이해하고 발전시키는 과정에서 두 사람 모두 성숙해질 수 있습니다`],
+      cons: [`${a}의 ${ia.cons[0]}이 ${b}에게는 이해하기 어려운 행동으로 비칠 수 있습니다`,`${b}의 ${ib.cons[0]} 성향이 ${a}에게 지속적인 스트레스가 될 수 있습니다`,`소통의 근본적 차이로 같은 상황을 완전히 다르게 해석하는 경우가 많습니다`],
+      tips: [`상대의 행동을 나쁜 의도로 해석하기 전에 '성향이 달라서'를 먼저 생각해보세요`,`${a}는 ${ib.want[0]}을(를), ${b}는 ${ia.want[0]}을(를) 의식적으로 노력해주세요`,`서로에 대한 기대 수준을 현실적으로 낮추고 솔직하게 조율하는 대화가 필요합니다`]
+    },
+    worst: {
+      feature: isSame
+        ? `같은 유형끼리는 보통 이해가 깊지만, ${a}의 경우 ${ia.cons[0]} 같은 공통 약점이 관계에서 심각한 문제로 발전할 가능성이 있습니다. 서로의 어두운 면을 가장 잘 보는 관계가 될 수 있습니다.`
+        : `${a}(${ia.nick})와 ${b}(${ib.nick})는 근본적인 가치관과 소통 방식에서 큰 차이를 보이는 조합입니다. ${ia.core}을 가진 ${a}와 ${ib.core}을 가진 ${b}는 서로를 이해하는 데 많은 에너지가 필요하며, 작은 일도 큰 갈등으로 번질 수 있습니다. 불가능한 관계는 없지만, 그 어느 조합보다 더 많은 노력이 필요합니다.`,
+      pros: [`정반대이기 때문에 상대에게서 자신에게 전혀 없는 강점을 배울 수 있습니다`,`이 관계를 극복해낸다면 어떤 관계도 해낼 수 있는 단단한 내공이 생깁니다`],
+      cons: [`${a}의 핵심 가치(${ia.core})와 ${b}의 핵심 가치(${ib.core})가 자주 정면 충돌합니다`,`${a}의 ${ia.cons[0]}이 ${b}에게 심각한 문제로 느껴질 수 있습니다`,`${b}의 ${ib.cons[0]} 성향이 ${a}의 기본 욕구를 충족시키지 못할 가능성이 높습니다`,`서로의 소통 언어 자체가 달라 같은 말이 전혀 다르게 전달되는 경우가 많습니다`],
+      tips: [`먼저 '왜 저렇게 행동하는가'를 이해하려는 진심 어린 노력이 가장 중요합니다`,`모든 갈등을 해결하려 하기보다 '다름을 공존시키는 방법'을 찾는 데 집중하세요`,`상대방의 가장 큰 장점(${ib.pros[0]})에 의식적으로 집중하며 감사함을 유지하세요`,`필요하다면 커플 상담 등 전문적인 도움을 받는 것도 현명한 선택입니다`]
+    }
+  };
+
+  return templates[gradeKey] || templates.mid;
+}
+
+function openDetail() {
+  const a = getMBTI("my");
+  const b = getMBTI("partner");
+  const gradeKey = getGrade(a, b);
+  const grade = GRADES[gradeKey];
+  const detail = generateDetail(a, b, gradeKey);
+
+  document.getElementById("detail-title").textContent = `${a}  ×  ${b}`;
+
+  const isLight = gradeKey === "mid" || gradeKey === "low";
+  const body = document.getElementById("detail-body");
+  body.innerHTML = "";
+
+  // Grade pill
+  const pill = document.createElement("div");
+  pill.className = "detail-grade-pill";
+  pill.textContent = `${grade.icon} ${grade.label}`;
+  pill.style.background = grade.color + "28";
+  pill.style.color = isLight ? (gradeKey === "mid" ? "#5a8500" : "#a07800") : grade.color;
+  pill.style.border = `1px solid ${grade.color}50`;
+  body.appendChild(pill);
+
+  // Feature
+  const feat = document.createElement("div");
+  feat.className = "detail-feature";
+  feat.textContent = detail.feature;
+  body.appendChild(feat);
+
+  // Sections
+  const sections = [
+    { title: "✨ 잘 맞는 점", items: detail.pros, icon: "•" },
+    { title: "⚠️ 주의할 점", items: detail.cons, icon: "•" },
+    { title: "💡 함께 성장하는 팁", items: detail.tips, icon: "→" }
+  ];
+
+  sections.forEach(sec => {
+    const section = document.createElement("div");
+    section.className = "detail-section";
+
+    const title = document.createElement("div");
+    title.className = "detail-section-title";
+    title.textContent = sec.title;
+    section.appendChild(title);
+
+    const items = document.createElement("div");
+    items.className = "detail-items";
+    sec.items.forEach(text => {
+      const item = document.createElement("div");
+      item.className = "detail-item";
+      item.innerHTML = `<span class="detail-item-icon">${sec.icon}</span><span>${text}</span>`;
+      items.appendChild(item);
+    });
+    section.appendChild(items);
+    body.appendChild(section);
+  });
+
+  document.getElementById("detail-overlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeDetail() {
+  document.getElementById("detail-overlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById("detail-overlay")) closeDetail();
+}
+
+// ─── UI Logic ───
+const traits = [
+  { a: "E", b: "I", labelA: "외향 (E)", labelB: "내향 (I)" },
+  { a: "N", b: "S", labelA: "직관 (N)", labelB: "감각 (S)" },
+  { a: "T", b: "F", labelA: "사고 (T)", labelB: "감정 (F)" },
+  { a: "J", b: "P", labelA: "판단 (J)", labelB: "인식 (P)" }
+];
+
+const state = { my: [null,null,null,null], partner: [null,null,null,null] };
+
+function buildSelector(containerId, stateKey) {
+  const container = document.getElementById(containerId);
+  traits.forEach((t, i) => {
+    const row = document.createElement("div");
+    row.className = "trait-row";
+
+    const lblA = document.createElement("span");
+    lblA.className = "trait-label";
+    lblA.textContent = t.labelA;
+
+    const btnA = document.createElement("button");
+    btnA.className = "trait-btn";
+    btnA.textContent = t.a;
+    btnA.setAttribute("aria-label", t.labelA);
+    btnA.onclick = () => pick(stateKey, i, t.a, btnA, btnB);
+
+    const vs = document.createElement("span");
+    vs.className = "vs-text";
+    vs.textContent = "vs";
+
+    const btnB = document.createElement("button");
+    btnB.className = "trait-btn";
+    btnB.textContent = t.b;
+    btnB.setAttribute("aria-label", t.labelB);
+    btnB.onclick = () => pick(stateKey, i, t.b, btnB, btnA);
+
+    const lblB = document.createElement("span");
+    lblB.className = "trait-label";
+    lblB.textContent = t.labelB;
+
+    row.append(lblA, btnA, vs, btnB, lblB);
+    container.appendChild(row);
+  });
+}
+
+function pick(key, idx, val, active, inactive) {
+  state[key][idx] = val;
+  active.classList.add("selected");
+  inactive.classList.remove("selected");
+  updatePreview(key);
+  updateBtn();
+}
+
+function updatePreview(key) {
+  const preview = document.getElementById(key + "-preview");
+  const mbti = state[key].map(v => v || "?").join("");
+  preview.textContent = mbti;
+}
+
+function updateBtn() {
+  const myReady = state.my.every(v => v);
+  const ready = myReady && state.partner.every(v => v);
+  document.getElementById("check-btn").disabled = !ready;
+
+  const section = document.getElementById("ranking-section");
+  section.style.display = myReady ? "block" : "none";
+  if (!myReady) closeRanking();
+  else if (rankingOpen) buildRanking(); // rebuild if my MBTI changed
+}
+
+function getMBTI(key) {
+  return state[key].join("");
+}
+
+function showResult() {
+  const a = getMBTI("my");
+  const b = getMBTI("partner");
+  const gradeKey = getGrade(a, b);
+  const grade = GRADES[gradeKey];
+  const desc = getDesc(a, b);
+
+  const area = document.getElementById("result-area");
+  area.style.display = "block";
+  area.className = "result-area " + grade.cls;
+
+  document.getElementById("result-pair").textContent = a + "  ×  " + b;
+  document.getElementById("result-icon").textContent = grade.icon;
+  document.getElementById("result-msg").textContent = grade.msg;
+  document.getElementById("result-desc").textContent = desc;
+
+  // Grade dots
+  const bar = document.getElementById("grade-bar");
+  bar.innerHTML = "";
+  const dotColors = ["#dc2626","#eab308","#84cc16","#166534","#3b82f6"];
+  const dotKeys = ["worst","low","mid","good","best"];
+  dotKeys.forEach((dk, i) => {
+    const dot = document.createElement("span");
+    dot.className = "grade-dot" + (dk === gradeKey ? " active" : "");
+    dot.style.backgroundColor = dotColors[i];
+    dot.style.color = dotColors[i];
+    bar.appendChild(dot);
+  });
+
+  // Update URL so result is shareable
+  const url = new URL(location.href);
+  url.searchParams.set("my", a);
+  url.searchParams.set("partner", b);
+  history.replaceState(null, "", url.toString());
+
+  area.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+let rankingOpen = false;
+
+function toggleRanking() {
+  rankingOpen = !rankingOpen;
+  const list = document.getElementById("ranking-list");
+  const toggle = document.getElementById("ranking-toggle");
+  if (rankingOpen) {
+    buildRanking();
+    list.style.display = "block";
+    toggle.textContent = "📊 전체 궁합 순위 접기";
+  } else {
+    list.style.display = "none";
+    toggle.textContent = "📊 내 MBTI 기준 전체 궁합 순위 보기";
+  }
+}
+
+function closeRanking() {
+  rankingOpen = false;
+  document.getElementById("ranking-list").style.display = "none";
+  document.getElementById("ranking-toggle").textContent = "📊 내 MBTI 기준 전체 궁합 순위 보기";
+}
+
+function buildRanking() {
+  const myType = getMBTI("my");
+  const gradeOrder = { best: 5, good: 4, mid: 3, low: 2, worst: 1 };
+  const currentPartner = state.partner.every(v => v) ? getMBTI("partner") : null;
+
+  const sorted = TYPES.map(type => {
+    const gradeKey = getGrade(myType, type);
+    return { type, gradeKey, level: gradeOrder[gradeKey] || 3 };
+  }).sort((a, b) => b.level - a.level || a.type.localeCompare(b.type));
+
+  const list = document.getElementById("ranking-list");
+  list.innerHTML = "";
+
+  let currentGradeKey = null;
+  let rank = 1;
+
+  sorted.forEach(item => {
+    const grade = GRADES[item.gradeKey];
+
+    if (item.gradeKey !== currentGradeKey) {
+      currentGradeKey = item.gradeKey;
+      const header = document.createElement("div");
+      header.className = "rank-group-header";
+      header.style.color = grade.color;
+      header.textContent = `${grade.icon} ${grade.label}`;
+      list.appendChild(header);
+    }
+
+    const row = document.createElement("div");
+    row.className = "ranking-item" + (currentPartner === item.type ? " active" : "");
+    row.onclick = () => {
+      applyMBTI("partner", item.type);
+      updateBtn();
+      document.querySelectorAll(".ranking-item").forEach(r => r.classList.remove("active"));
+      row.classList.add("active");
+      document.getElementById("partner").scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+
+    const num = document.createElement("span");
+    num.className = "rank-num";
+    num.textContent = rank++;
+
+    const typeEl = document.createElement("span");
+    typeEl.className = "rank-type";
+    typeEl.textContent = item.type;
+
+    const shortDesc = document.createElement("span");
+    shortDesc.className = "rank-desc-short";
+    shortDesc.textContent = getDesc(myType, item.type).slice(0, 28) + "…";
+
+    const badge = document.createElement("span");
+    badge.className = "rank-badge";
+    badge.textContent = grade.label;
+    const isLight = item.gradeKey === "mid" || item.gradeKey === "low";
+    badge.style.background = grade.color + "30";
+    badge.style.color = isLight ? "#c8a800" : grade.color;
+    if (item.gradeKey === "mid") badge.style.color = "#6a9e00";
+
+    row.append(num, typeEl, shortDesc, badge);
+    list.appendChild(row);
+  });
+
+  const hint = document.createElement("div");
+  hint.className = "tap-hint";
+  hint.textContent = "탭하면 상대방 MBTI로 바로 설정됩니다";
+  list.appendChild(hint);
+}
+
+function resetAll() {
+  state.my = [null,null,null,null];
+  state.partner = [null,null,null,null];
+  document.querySelectorAll(".trait-btn").forEach(b => b.classList.remove("selected"));
+  document.getElementById("my-preview").textContent = "????";
+  document.getElementById("partner-preview").textContent = "????";
+  document.getElementById("check-btn").disabled = true;
+  document.getElementById("result-area").style.display = "none";
+  document.getElementById("ranking-section").style.display = "none";
+  closeRanking();
+  history.replaceState(null, "", location.pathname);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+async function shareResult() {
+  const shareUrl = location.href;
+  const a = getMBTI("my");
+  const b = getMBTI("partner");
+  const gradeKey = getGrade(a, b);
+  const shareText = `MBTI 궁합 테스트 결과 🔍\n${a} × ${b} — ${GRADES[gradeKey].label}\n${shareUrl}`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "MBTI 궁합 테스트", text: shareText, url: shareUrl });
+    } catch (e) {
+      // user cancelled — do nothing
+    }
+  } else {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showToast("🔗 링크가 클립보드에 복사됐어요!");
+    } catch (e) {
+      // fallback for older browsers
+      const ta = document.createElement("textarea");
+      ta.value = shareUrl;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      showToast("🔗 링크가 클립보드에 복사됐어요!");
+    }
+  }
+}
+
+function applyMBTI(key, mbti) {
+  const letters = mbti.split("");
+  const traitOrder = [
+    ["E","I"], ["N","S"], ["T","F"], ["J","P"]
+  ];
+  letters.forEach((letter, i) => {
+    state[key][i] = letter;
+  });
+  // Reflect selections on buttons
+  const containerId = key + "-selector";
+  const container = document.getElementById(containerId);
+  const rows = container.querySelectorAll(".trait-row");
+  rows.forEach((row, i) => {
+    const btns = row.querySelectorAll(".trait-btn");
+    btns.forEach(btn => {
+      btn.classList.toggle("selected", btn.textContent === letters[i]);
+    });
+  });
+  updatePreview(key);
+}
+
+function loadFromURL() {
+  const params = new URLSearchParams(location.search);
+  const my = params.get("my");
+  const partner = params.get("partner");
+  if (my && partner && TYPES.includes(my) && TYPES.includes(partner)) {
+    applyMBTI("my", my);
+    applyMBTI("partner", partner);
+    updateBtn();
+    showResult();
+  }
+}
+
+// Init
+buildSelector("my-selector", "my");
+buildSelector("partner-selector", "partner");
+loadFromURL();
+</script>
+</body>
+</html>
