@@ -467,6 +467,29 @@
     border-color: rgba(255,255,255,0.45);
   }
 
+  /* Language Switcher */
+  .lang-switcher {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .lang-btn {
+    padding: 6px 14px;
+    border: 1.5px solid rgba(255,255,255,0.25);
+    border-radius: 20px;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .lang-btn:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.4); }
+  .lang-btn.active { background: rgba(255,255,255,0.92); color: #1a1a2e; border-color: #fff; }
+
   /* Ranking */
   .ranking-section { display: none; margin-bottom: 16px; }
 
@@ -756,14 +779,19 @@
 <main id="app" aria-label="MBTI 궁합 테스트">
 <div class="container">
 
+  <div class="lang-switcher" aria-label="언어 선택 / Language">
+    <button class="lang-btn active" id="btn-ko" onclick="setLang('ko')" lang="ko" aria-pressed="true">🇰🇷 한국어</button>
+    <button class="lang-btn" id="btn-en" onclick="setLang('en')" lang="en" aria-pressed="false">🇺🇸 English</button>
+  </div>
+
   <header>
-    <h1>MBTI 궁합 테스트</h1>
-    <p class="subtitle">나와 상대방의 MBTI를 선택하고 궁합을 확인해보세요</p>
+    <h1 data-i18n="title">MBTI 궁합 테스트</h1>
+    <p class="subtitle" data-i18n="subtitle">나와 상대방의 MBTI를 선택하고 궁합을 확인해보세요</p>
   </header>
 
   <!-- My MBTI -->
   <section class="card" aria-label="내 MBTI 선택">
-    <div class="section-label"><span class="icon" aria-hidden="true">🧑</span> 내 MBTI</div>
+    <div class="section-label"><span class="icon" aria-hidden="true">🧑</span> <span data-i18n="myMbti">내 MBTI</span></div>
     <div id="my-selector" role="group" aria-label="내 MBTI 유형 선택"></div>
     <div class="mbti-preview" id="my-preview" aria-live="polite" aria-label="선택된 내 MBTI">????</div>
   </section>
@@ -778,13 +806,13 @@
 
   <!-- Partner MBTI -->
   <section class="card" aria-label="상대방 MBTI 선택" id="partner">
-    <div class="section-label"><span class="icon" aria-hidden="true">💕</span> 상대방 MBTI</div>
+    <div class="section-label"><span class="icon" aria-hidden="true">💕</span> <span data-i18n="partnerMbti">상대방 MBTI</span></div>
     <div id="partner-selector" role="group" aria-label="상대방 MBTI 유형 선택"></div>
     <div class="mbti-preview" id="partner-preview" aria-live="polite" aria-label="선택된 상대방 MBTI">????</div>
   </section>
 
   <!-- Submit -->
-  <button class="check-btn" id="check-btn" disabled onclick="showResult()" aria-label="MBTI 궁합 결과 확인하기">궁합 보기</button>
+  <button class="check-btn" id="check-btn" disabled onclick="showResult()" aria-label="MBTI 궁합 결과 확인하기" data-i18n="checkBtn">궁합 보기</button>
 
   <!-- Result -->
   <section class="result-area" id="result-area" aria-live="polite" aria-label="궁합 결과">
@@ -793,10 +821,10 @@
     <div class="result-grade-icon" id="result-icon"></div>
     <div class="result-main-msg" id="result-msg"></div>
     <div class="result-desc" id="result-desc"></div>
-    <button class="detail-btn" onclick="openDetail()">📋 자세히 보기</button>
+    <button class="detail-btn" onclick="openDetail()" data-i18n="detailBtn">📋 자세히 보기</button>
     <div style="margin-top:12px;">
-      <button class="retry-btn" onclick="resetAll()">다시 해보기</button>
-      <button class="share-btn" onclick="shareResult()">🔗 결과 공유하기</button>
+      <button class="retry-btn" onclick="resetAll()" data-i18n="retryBtn">다시 해보기</button>
+      <button class="share-btn" onclick="shareResult()" data-i18n="shareBtn">🔗 결과 공유하기</button>
     </div>
   </div>
 
@@ -855,6 +883,320 @@
 </main>
 
 <script>
+// ─── Language ───
+let currentLang = 'ko';
+const S = () => STRINGS[currentLang];
+const TI = () => currentLang === 'en' ? TYPE_INFO_EN : TYPE_INFO;
+
+const STRINGS = {
+  ko: {
+    htmlLang: 'ko',
+    title: 'MBTI 궁합 테스트 | 16가지 유형 케미 완벽 분석 · 무료',
+    subtitle: '나와 상대방의 MBTI를 선택하고 궁합을 확인해보세요',
+    myMbti: '내 MBTI', partnerMbti: '상대방 MBTI',
+    checkBtn: '궁합 보기', detailBtn: '📋 자세히 보기',
+    retryBtn: '다시 해보기', shareBtn: '🔗 결과 공유하기',
+    rankingOpen: '📊 내 MBTI 기준 전체 궁합 순위 보기',
+    rankingClose: '📊 전체 궁합 순위 접기',
+    tapHint: '탭하면 상대방 MBTI로 바로 설정됩니다',
+    toastCopied: '🔗 링크가 클립보드에 복사됐어요!',
+    descFallback: '두 유형의 조합은 서로의 차이를 이해하고 존중할 때 좋은 관계를 만들어갈 수 있습니다. 열린 마음으로 소통하며 함께 성장해보세요!',
+    metaDesc: 'MBTI 궁합 테스트로 나와 상대방의 케미를 확인해보세요. INFP·ENFJ·INTJ 등 16가지 MBTI 유형별 궁합을 천생연분부터 최악의 궁합까지 5단계로 무료 분석해드립니다.',
+    traits: [
+      { a:'E', b:'I', labelA:'외향 (E)', labelB:'내향 (I)' },
+      { a:'N', b:'S', labelA:'직관 (N)', labelB:'감각 (S)' },
+      { a:'T', b:'F', labelA:'사고 (T)', labelB:'감정 (F)' },
+      { a:'J', b:'P', labelA:'판단 (J)', labelB:'인식 (P)' }
+    ],
+    grades: {
+      best:  { label:'천생연분',    msg:'우리 궁합은 천생연분! 💙' },
+      good:  { label:'발전 가능',   msg:'좋은 관계로 발전 가능! 💚' },
+      mid:   { label:'반반',        msg:'안 맞는 것 맞는 것, 반반! 🤝' },
+      low:   { label:'좋지도 않음', msg:'최악은 아니지만 좋지도 않음 😐' },
+      worst: { label:'다시 생각',   msg:'우리 궁합 다시 생각해봐요 💔' }
+    },
+    detailPros:'✨ 잘 맞는 점', detailCons:'⚠️ 주의할 점', detailTips:'💡 함께 성장하는 팁',
+    shareTextFn: (a,b,label) => `MBTI 궁합 결과 🔍\n${a} × ${b} — ${label}`
+  },
+  en: {
+    htmlLang: 'en',
+    title: 'MBTI Compatibility Test | Perfect Match Analysis for All 16 Types · Free',
+    subtitle: "Select your MBTI type and your partner's to discover your chemistry",
+    myMbti: 'My MBTI', partnerMbti: "Partner's MBTI",
+    checkBtn: 'Check Compatibility', detailBtn: '📋 View Details',
+    retryBtn: 'Try Again', shareBtn: '🔗 Share Result',
+    rankingOpen: '📊 View Full Compatibility Ranking',
+    rankingClose: '📊 Close Ranking',
+    tapHint: "Tap to set as partner's MBTI",
+    toastCopied: '🔗 Link copied to clipboard!',
+    descFallback: 'This combination can build a wonderful relationship through mutual understanding and respect. Stay open and keep communicating!',
+    metaDesc: 'Discover your MBTI compatibility! Analyze how well you match across all 16 MBTI types — from perfect soulmates to complete opposites, in 5 detailed levels with relationship reports.',
+    traits: [
+      { a:'E', b:'I', labelA:'Extrovert (E)', labelB:'Introvert (I)' },
+      { a:'N', b:'S', labelA:'Intuitive (N)', labelB:'Sensing (S)' },
+      { a:'T', b:'F', labelA:'Thinking (T)', labelB:'Feeling (F)' },
+      { a:'J', b:'P', labelA:'Judging (J)',   labelB:'Perceiving (P)' }
+    ],
+    grades: {
+      best:  { label:'Soulmates',      msg:"You're absolute soulmates! 💙" },
+      good:  { label:'Great Potential', msg:'A relationship full of potential! 💚' },
+      mid:   { label:'50/50',           msg:"Some things click, some don't! 🤝" },
+      low:   { label:'Challenging',     msg:'Not terrible, but not great either 😐' },
+      worst: { label:'Reconsider',      msg:'You might want to reconsider this 💔' }
+    },
+    detailPros:'✨ What Works Well', detailCons:'⚠️ Watch Out For', detailTips:'💡 Tips for Growing Together',
+    shareTextFn: (a,b,label) => `MBTI Compatibility Result 🔍\n${a} × ${b} — ${label}`
+  }
+};
+
+// ─── English Type Profiles ───
+const TYPE_INFO_EN = {
+  INFP: { nick:"The Mediator",      core:"deep idealism and sensitive emotions",      pros:["Outstanding empathy that deeply understands others' feelings","Strong inner values that pursue authentic relationships","Creative expression that adds real depth to relationships"],         cons:["Tends to avoid conflict, letting emotions quietly build up","May feel disappointed due to over-idealizing the relationship"], want:["Authentic emotional exchange","Respect for personal values","Deep and meaningful conversations"] },
+  ENFP: { nick:"The Campaigner",    core:"boundless enthusiasm and creativity",       pros:["Explosive positive energy that brings relationships to life","Creative ideas that make every day feel fresh and exciting","Warm empathy that makes partners feel truly special"],            cons:["Inconsistency can make partners feel uncertain","May lose interest quickly, lacking depth at times"], want:["Exploring new experiences together","Emotional support and encouragement","Freedom of expression"] },
+  INFJ: { nick:"The Advocate",      core:"deep insight and strong inner vision",      pros:["Sharp intuition that reads partners' hearts better than anyone","Forms deep bonds through sincere and meaningful conversation","Takes relationships seriously with a strong sense of purpose"],  cons:["Perfectionist expectations may create pressure in the relationship","May suddenly need alone time, seeming to withdraw without warning"], want:["Deep spiritual and emotional connection","Sharing a vision for the future","Authenticity and trust above all"] },
+  ENFJ: { nick:"The Protagonist",   core:"warm charisma and heartfelt dedication",   pros:["Outstanding leadership that naturally guides and uplifts partners","Deep empathy that makes partners always feel heard and understood","Devotes real energy to relationships, actively helping partners grow"], cons:["May expect too much or become emotionally dependent on partners","Can burn out from consistently putting others before themselves"], want:["A role in helping their partner grow","Emotional harmony and stability","Sincere gratitude and recognition"] },
+  INTJ: { nick:"The Architect",     core:"strategic thinking and fierce independence",pros:["Systematic and logical — brings clarity to any situation","Strong independence gives partners healthy psychological space","Plans the relationship's direction with long-term vision"],          cons:["Poor at expressing emotions, may come across as cold","Very strong conviction in own methods; can be inflexible"], want:["Intellectual stimulation and deep conversation","Respect for independence and personal space","Clear trust and unwavering commitment"] },
+  ENTJ: { nick:"The Commander",     core:"powerful decisiveness and relentless drive",pros:["Strong leadership that clearly sets direction in the relationship","Efficient thinking — solves problems quickly and keeps moving forward","Spots partners' potential and motivates them to reach it"],  cons:["May overlook emotional needs and speak too bluntly","Excessive competitiveness can spill into the relationship"], want:["Recognition of ability and achievement","A partner who grows alongside them","Clear and direct communication"] },
+  INTP: { nick:"The Logician",      core:"deep logical analysis and intellectual curiosity", pros:["Outstanding analytical ability to assess situations objectively","Creative problem-solving that finds new angles on difficulties","Endless intellectual curiosity that drives mutual growth"],  cons:["Poor at emotional expression — true feelings may not come through","Over-analysis can lead to indecisiveness and stalled action"], want:["Intellectual conversation and debate","Respect for personal space and time","A deep and genuinely honest relationship"] },
+  ENTP: { nick:"The Debater",       core:"original creativity and intellectual boldness",   pros:["Original ideas that keep the relationship from ever getting boring","Fast adaptability to handle almost any situation flexibly","Intellectual openness to explore and embrace diverse perspectives"], cons:["Inconsistency — words and actions don't always align","Argumentative tendencies can unintentionally cause hurt"], want:["Intellectual stimulation and challenge","Respect for independence and autonomy","Exploring new ideas together"] },
+  ISFP: { nick:"The Adventurer",    core:"delicate sensibility and artistic soul",    pros:["Outstanding aesthetic sense that makes everyday life more beautiful","Natural flexibility that matches partners' rhythm effortlessly","Quiet but deep care that warmly wraps partners in comfort"],     cons:["Avoids conflict — emotions build quietly and can suddenly overflow","Difficulty with long-term planning leaves relationship direction unclear"], want:["Enjoying the present moment together","Being accepted completely as-is","Quiet yet deep emotional exchange"] },
+  ESFP: { nick:"The Entertainer",   core:"vibrant and spontaneous life force",        pros:["Strong positive energy that lights up any relationship","Outstanding sociability — creates warmth and connection everywhere","Lives fully in the present, making life feel genuinely exciting"],  cons:["Spontaneous actions without long-term plans can unsettle partners","May prefer fun activities over deep emotional conversations"], want:["Sharing joyful experiences","A free and pressure-free relationship","A partner who embraces the present"] },
+  ISTP: { nick:"The Virtuoso",      core:"practical problem-solving mastery",         pros:["Outstanding practical skills — directly solves partners' problems","Stays calm and decisive in crises, providing real stability","Logical thinking without emotional bias gives clear perspective"],   cons:["Poor at expressing emotions — may seem disinterested or distant","Unpredictable — can suddenly become unreachable without explanation"], want:["Guaranteed independence and freedom","Recognition that actions are their love language","A practical and pressure-free relationship"] },
+  ESTP: { nick:"The Entrepreneur",  core:"explosive drive and sharp realistic sense", pros:["Strong momentum — immediately turns ideas into action","Reliable in any crisis with sharp problem-solving skills","Grounded and practical — provides real, tangible help"],              cons:["Impulsive decisions can make partners feel dragged along","Results-focused mindset may leave partners feeling emotionally sidelined"], want:["An active and dynamic relationship","Direct and honest communication","A partner who lives fully in the present"] },
+  ISFJ: { nick:"The Defender",      core:"warm dedication and unshakable stability",  pros:["Strong responsibility — an utterly reliable partner in any situation","Warm care that makes partners always feel looked after","Notices what partners need before they even have to ask"],      cons:["Resistance to change — reluctant to try new approaches or experiences","Excessive self-sacrifice can quietly build resentment over time"], want:["A stable and lasting relationship","Recognition of small but consistent acts of care","Building meaningful everyday moments together"] },
+  ESFJ: { nick:"The Consul",        core:"warm sociability and relationship devotion",pros:["Outstanding sociability — creates connections and warmth everywhere","Meticulous care that makes partners feel genuinely treasured","Seeks harmony — always tries to resolve tension peacefully"],     cons:["Overly conscious of others' opinions; may suppress own feelings","Conflict avoidance means honest emotional communication gets delayed"], want:["Harmony and stability in the relationship","Thoughtful empathy and care","Shared quality time and lasting memories"] },
+  ISTJ: { nick:"The Logistician",   core:"thorough responsibility and deep reliability", pros:["Strong sense of duty — keeps every promise and builds real trust","Systematic approach makes the relationship stable and predictable","Proves love consistently through actions, not just words"],    cons:["Poor at emotional expression — warmth may not come through clearly","Resistant to change; can be skeptical about new ideas or initiatives"], want:["A reliable partner who honors commitments","A stable and predictable relationship structure","Love demonstrated clearly through consistent action"] },
+  ESTJ: { nick:"The Executive",     core:"systematic organization and strong execution",  pros:["Strong organizational skills bring order and security to the relationship","Deep sense of responsibility — truly devoted to partner and family","Decisive and action-oriented — provides direction in uncertain times"], cons:["May lack flexibility and insist on their own way of doing things","Prioritizes practical outcomes over emotional expression, seeming cold"], want:["A responsible and dedicated partner","A clear and well-structured relationship","Shared goals centered on family and long-term stability"] }
+};
+
+// ─── English Descriptions ───
+const DESC_EN = {
+  "INFP-ENFJ":"When INFP's deep inner world meets ENFJ's warm leadership, they become an endless source of inspiration for each other. ENFJ helps INFP share their values with the world, while INFP gives ENFJ the space to reconnect with their true self. Deep emotional exchange and mutual respect for ideals make this a truly beautiful match.",
+  "INFP-ENTJ":"The idealistic INFP and goal-driven ENTJ look like opposites, but they perfectly complement what the other lacks. ENTJ turns INFP's dreams into reality, while INFP reminds ENTJ of the importance of people and emotion.",
+  "INFP-INFP":"Two INFPs share a deep emotional understanding and can bond through shared passions in art, literature, and music. Both tend to avoid conflict, so making communication an intentional habit is essential.",
+  "INFP-ENFP":"Both NF types bring rich emotional exchange. ENFP's energy pairs beautifully with INFP's depth, creating a creative, inspiring relationship — though real-world practicalities may challenge both.",
+  "INFP-INFJ":"Both idealistic with rich inner worlds, they often feel understood without needing to explain. Quiet yet deeply meaningful conversations build a strong emotional bond.",
+  "INFP-INTJ":"INFP's sensitivity and INTJ's logic create a fascinating pairing. They enjoy deep conversations and grow by exploring each other's intellectual worlds together.",
+  "INFP-INTP":"Both introverted and reflective, they build a quiet but profound connection. INTP's logical analysis beautifully complements INFP's emotional insight.",
+  "INFP-ENTP":"ENTP's endless ideas spark against INFP's deep values, producing fascinating conversations. They explore the world in different ways, both drawn to new possibilities.",
+  "ENFP-INFJ":"ENFP's passion and INFJ's intuition create magical chemistry. Both love deep conversations, champion each other's dreams, and feel a genuine sense of connection — a golden pairing.",
+  "ENFP-INTJ":"Free-spirited ENFP and strategic INTJ are powerfully drawn to each other. ENFP opens INTJ's world to possibility, while INTJ gives ENFP's ideas real structure and depth.",
+  "ENFP-ENFP":"Two ENFPs together spark an explosion of energy and ideas! Endlessly fun and adventurous, though working out who handles practical matters is the shared challenge.",
+  "ENFP-ENFJ":"Both extroverted and emotionally rich, they radiate warmth together. People-centered values create a relationship built on mutual encouragement and genuine growth.",
+  "ENFP-ENTJ":"ENFP's creativity paired with ENTJ's execution makes dreams come true. A power duo who recognize each other's strengths and grow dynamically together.",
+  "ENFP-INTP":"Two endlessly curious minds whose conversations and ideas never run dry. ENFP draws INTP into the social world; INTP adds logical depth to ENFP's thinking.",
+  "ENFP-ENTP":"Both love exploring new ideas and engaging in lively debate. Never boring together — they elevate each other's thinking, though follow-through needs attention.",
+  "INFJ-ENFP":"INFJ's insight and ENFP's enthusiasm create a relationship of deep mutual discovery. Both seek meaning and constantly inspire each other to reach new heights.",
+  "INFJ-ENTP":"INFJ's intuition and ENTP's originality create an intellectually charged connection. Their different worldviews make this a compelling, soulmate-level match.",
+  "INFJ-INFP":"Both have rich inner worlds and naturally understand each other without many words. Rich emotional exchange and meaningful conversations build a warm, heartfelt bond.",
+  "INFJ-INFJ":"Two INFJs meeting is like looking into a mirror — deep mutual understanding, though shared weaknesses can also be amplified if left unaddressed.",
+  "INFJ-ENFJ":"Both altruistic and people-focused, they share meaningful goals and form strong bonds. Co-created visions and genuine support for each other's growth define this relationship.",
+  "INFJ-INTJ":"Both intuitive and future-oriented. They share deep conversations, build strategies together, and deeply respect each other's intellectual worlds — a mature, thoughtful pairing.",
+  "INFJ-ENTJ":"INFJ's insight paired with ENTJ's decisiveness makes a formidable team. Both goal-oriented, they can work powerfully together to realize big visions.",
+  "INFJ-INTP":"Two quietly intellectual types who enjoy deep thought and meaningful conversation. INTP's logic and INFJ's intuition continually stimulate each other's growth.",
+  "ENFJ-INFP":"ENFJ's warm leadership and INFP's deep sensitivity make them each other's best partners. ENFJ helps INFP's dreams take shape; INFP gives ENFJ genuine rest and connection.",
+  "ENFJ-ISFP":"ENFJ's passion and ISFP's delicacy enrich each other's worlds beautifully. ENFJ encourages ISFP to step into the world; ISFP teaches ENFJ to slow down and enjoy the present.",
+  "ENFJ-ENFP":"Two energetic types who light up every room together. Shared passion and deep emotional connection create a vibrant, growing partnership.",
+  "ENFJ-INFJ":"Both people-focused and deeply caring, they build a relationship on profound mutual understanding. Shared values and visions lead naturally to a meaningful life together.",
+  "ENFJ-ENFJ":"Two ENFJs deeply understand each other's dedication and passion for helping others. Together they pursue meaningful goals, though balancing leadership roles takes conscious effort.",
+  "ENFJ-INTJ":"ENFJ's warmth and INTJ's strategy form a powerful pairing of heart and mind. Their differing strengths complement each other beautifully in achieving shared goals.",
+  "ENFJ-ENTJ":"Both strong leaders driven by purpose. Enormous synergy emerges when they respect each other's vision — though navigating who leads remains the key challenge.",
+  "ENFJ-INTP":"ENFJ's empathy and INTP's logic open entirely new worlds for each other. ENFJ brings emotional depth; INTP brings objective perspective.",
+  "ENFJ-ENTP":"Two vibrant types whose conversations and ideas never stop. They stimulate each other's social energy and intellect, growing together in exciting directions.",
+  "INTJ-ENFP":"Strategist INTJ and passionate ENFP are powerfully and irresistibly drawn to each other. ENFP brightens INTJ's world with color; INTJ gives ENFP's ideas real structure.",
+  "INTJ-ENTP":"Both fiercely independent and intellectually driven. Endless strategic debates and idea exchanges; they deeply respect each other's intelligence — true soulmates.",
+  "INTJ-INFP":"INTJ's systematic thinking and INFP's emotional depth create a growth-focused relationship. Both have rich inner worlds that allow for genuinely deep connection.",
+  "INTJ-INFJ":"Both intuitive and future-oriented, they share grand visions, build strategies side by side, and deeply value each other's rare insights.",
+  "INTJ-ENFJ":"INTJ's analytical clarity and ENFJ's empathy create a powerful pairing of brains and heart — complementing each other's weaknesses to achieve shared goals.",
+  "INTJ-INTJ":"Two INTJs perfectly understand each other's independence and intellectual pursuits. Efficient and drama-free, though emotional connection needs deliberate, conscious effort.",
+  "INTJ-ENTJ":"Both goal-oriented strategists who can accomplish anything together. A powerhouse combination, though clashes over whose approach is correct can arise.",
+  "INTJ-INTP":"Both logical and independent, they enjoy comfortable intellectual space and endless conversation. A naturally rich, low-drama relationship.",
+  "INTJ-ISFP":"Two very different worldviews, but each learns new perspectives from the other. ISFP's sensitivity brings flexibility to INTJ; INTJ's structure gives ISFP direction.",
+  "INTJ-ESFP":"Polar opposite energies that can feel exciting at first, but lifestyle differences need ongoing, honest alignment. Open-mindedness enables real growth for both.",
+  "INTJ-ISTP":"Both independent and logical, they share comfortable space and a natural respect for each other's privacy. Understanding their different communication styles is key.",
+  "INTJ-ESTP":"Action-first ESTP and strategist INTJ approach problems differently. That contrast can be synergistic, but lifestyle friction needs watching.",
+  "INTJ-ISFJ":"INTJ's innovative mindset and ISFJ's stability preference can clash. Recognizing each other's genuinely different strengths is the foundation of a complementary relationship.",
+  "INTJ-ESFJ":"Emotion meets logic; tradition meets innovation. The values gap is wide, but genuine mutual respect enables both to learn from each other.",
+  "INTJ-ISTJ":"Both systematic, but INTJ prefers innovation while ISTJ prefers what's proven. Understanding each other's approaches — without trying to convert the other — is crucial.",
+  "INTJ-ESTJ":"Both goal-focused but with different methods. Respecting each other's approaches and finding compromise enables an efficient, functional partnership.",
+  "ENTJ-INFP":"Decisive ENTJ and sensitive INFP have exactly what the other lacks — a true fantasy pairing. ENTJ makes INFP's dreams real; INFP brings softness and depth to ENTJ.",
+  "ENTJ-INTP":"Strategist ENTJ and theorist INTP make the ultimate team for turning ideas into reality. ENTJ provides direction; INTP adds depth — a near-perfect complement.",
+  "ENTJ-ENFP":"Energy-filled ENFP and goal-driven ENTJ are a power couple who make dreams tangible. ENFP's creativity and ENTJ's execution create incredible, sustained synergy.",
+  "ENTJ-INFJ":"ENTJ's decisiveness and INFJ's insight form a powerful team to realize meaningful visions. Mutual respect for each other's strengths enables great achievements together.",
+  "ENTJ-ENFJ":"Both strong, charismatic leaders. Enormous synergy when pursuing big visions together — but navigating who leads remains the defining challenge.",
+  "ENTJ-INTJ":"Two strategists who can achieve any goal as a dream team. They recognize and respect each other's capabilities and collaborate with remarkable efficiency.",
+  "ENTJ-ENTJ":"Two ENTJs deeply understand each other's ambition and drive. Great things await, but both being unwilling to yield requires careful, deliberate navigation.",
+  "ENTJ-ENTP":"Both extroverted idea generators who endlessly seek new projects and challenges. A dynamic, mutually stimulating relationship full of momentum.",
+  "ENTJ-ISFP":"Leader ENTJ and artist ISFP inhabit different worlds, but the contrast holds real appeal. ISFP's sensitivity gives ENTJ needed breathing room and perspective.",
+  "ENTJ-ESFP":"Both energetic but pursuing different things. Mutual respect for their differences makes balance achievable and enriching.",
+  "ENTJ-ISTP":"Both logical and efficiency-minded. ENTJ's big picture pairs well with ISTP's practical skills, though communication style differences need conscious attention.",
+  "ENTJ-ESTP":"Both action-driven — they move fast and decisively together. Balancing ENTJ's long-term vision with ESTP's spontaneity is the key to making it work.",
+  "ENTJ-ISFJ":"ENTJ's drive for change and ISFJ's need for stability can create ongoing tension. Genuinely valuing each other's perspective is the key to the relationship.",
+  "ENTJ-ESFJ":"Both sociable and organized but with different core priorities. ESFJ values harmony; ENTJ values efficiency — understanding this gap makes all the difference.",
+  "ENTJ-ISTJ":"Both goal-oriented and systematic but with different attitudes toward change. Respecting each other's methods enables a stable, forward-moving partnership.",
+  "ENTJ-ESTJ":"Both decisive and organized — productive partners, but both tending to hold their ground requires genuine flexibility from each side.",
+  "INTP-ENTJ":"Theorist INTP and executor ENTJ make the best team for making abstract ideas concrete. INTP designs the framework; ENTJ builds it — a near-perfect complement.",
+  "INTP-ESTJ":"A surprising soulmate match! INTP's creative theory and ESTJ's systematic execution generate remarkable synergy. Recognizing each other's strengths makes them best partners.",
+  "INTP-INFP":"Both introverted and reflective, they respect each other's inner worlds completely. INTP's logic and INFP's sensitivity blend into a quietly profound relationship.",
+  "INTP-ENFP":"Two curiosity-filled minds in endless exploration and conversation. ENFP's enthusiasm draws INTP outward; INTP adds real logical depth to ENFP's ideas.",
+  "INTP-INFJ":"Two intuitive types with an almost unspoken understanding of each other. Intellectual conversation and emotional exchange balance beautifully — a mature connection.",
+  "INTP-ENFJ":"INTP's analysis and ENFJ's empathy open entirely new perspectives for each other. ENFJ introduces INTP to the emotional world; INTP gives ENFJ objective grounding.",
+  "INTP-INTJ":"Both independent and intellectually driven, they share comfortable space and deep discussions with natural ease. Low-drama and intellectually rich.",
+  "INTP-INTP":"Two INTPs with perfect mutual understanding — endless intellectual conversation, though both preferring thought over action can stall real momentum.",
+  "INTP-ENTP":"Both logical explorers in endless debate and idea exchange. Intellectually one of the most stimulating pairings possible.",
+  "INTP-ISFP":"Two types experiencing the world very differently. Open exploration of each other's perspectives can reveal genuinely new and enriching discoveries.",
+  "INTP-ESFP":"Polar energies that feel refreshingly novel at first, but major lifestyle differences require honest, long-term alignment.",
+  "INTP-ISTP":"Both logical and independent. They bond naturally through shared problem-solving and respect for each other's space.",
+  "INTP-ESTP":"INTP's theory and ESTP's action make an interesting complement. Understanding the natural difference in their pacing is the critical key.",
+  "INTP-ISFJ":"Very different communication styles create real challenge. Bridging ISFJ's emotional approach and INTP's logical one takes genuine, sustained effort from both.",
+  "INTP-ESFJ":"An extreme meeting of feeling and logic. Recognizing each other's genuine strengths enables a complementary relationship, but bridging core differences takes real time.",
+  "INTP-ISTJ":"Both logical but applied differently — INTP favors new theories; ISTJ favors what's proven. Respecting each other's approach enables a stable relationship.",
+  "ENTP-INFJ":"ENTP's originality and INFJ's deep intuition create a relationship of endless mutual inspiration — a true soulmate match of novelty and depth.",
+  "ENTP-INTJ":"Both strategic and independent thinkers who relish intellectual challenges. They stimulate each other constantly, generating innovative ideas together.",
+  "ENTP-INFP":"ENTP's logical exploration and INFP's emotional depth create an interesting, broadening dynamic — each expands the other's perspective.",
+  "ENTP-ENFP":"Both explorers of possibility who enthusiastically try new things. Full of adventure and ideas together, though finishing what they start remains a shared challenge.",
+  "ENTP-ENFJ":"Two sociable, energy-filled types who create warmth wherever they go. They champion each other's ideas and visions, growing together with real momentum.",
+  "ENTP-ENTJ":"Both bold and fiercely ambitious. Together they radiate energy that feels capable of changing the world — a powerfully dynamic relationship.",
+  "ENTP-INTP":"Both logical explorers in endless debate and idea exchange — intellectually one of the richest, most stimulating pairings.",
+  "ENTP-ENTP":"Two ENTPs together: explosive ideas and debates without end. Perfectly understood by each other, but seeing things through remains a shared hurdle.",
+  "ENTP-ISFP":"Very different energies. ENTP's debate style can feel overwhelming to ISFP, but genuine respect for their differences can open genuinely new worlds for both.",
+  "ENTP-ESFP":"Both extroverted and active but with different core interests. Valuing what each brings creates a colorful, varied relationship.",
+  "ENTP-ISTP":"Both logical and flexible thinkers who bond through problem-solving and exploring new challenges together.",
+  "ENTP-ESTP":"Both action-oriented — they move quickly and try new things together, but meaningful emotional exchange requires deliberate, conscious effort.",
+  "ENTP-ISFJ":"Very different personalities. Building genuine mutual understanding requires substantial time and sustained effort from both sides.",
+  "ENTP-ESFJ":"Sociable in common, but very different in conversation depth and core values. Real effort to understand each other is the only path forward.",
+  "ENTP-ISTJ":"Innovation meets tradition head-on. Very different approaches, but recognizing each other's genuine strengths enables a surprisingly complementary relationship.",
+  "ENTP-ESTJ":"Logical common ground exists, but proven methods vs. new possibilities creates friction. Genuine mutual respect is the most important foundation.",
+  "ISFP-ENFJ":"Artistic ISFP and warm ENFJ are strongly drawn to each other — a true soulmate pairing. ENFJ helps ISFP share their gifts with the world; ISFP gives ENFJ beauty and calm.",
+  "ISFP-ESFJ":"ISFP's delicacy and ESFJ's warm care combine for a stable, harmonious relationship where they accept each other completely and naturally.",
+  "ISFP-ESTJ":"Though different, ESTJ's stability and ISFP's flexibility complement each other well — partners who find genuine appeal in their contrasts.",
+  "ISFP-INTJ":"Feeling meets logic. Initial communication takes real effort, but understanding each other's inner worlds eventually enables a surprisingly deep relationship.",
+  "ISFP-ENTJ":"Leader ENTJ and artist ISFP inhabit different worlds, but their differences hold real and lasting appeal.",
+  "ISFP-INTP":"Two types experiencing the world differently. Open exploration of each other's perspectives can lead to genuinely enriching discoveries.",
+  "ISFP-ENTP":"ENTP's lively energy and ISFP's quiet sensitivity are very different, but that contrast can open genuinely new perspectives for both.",
+  "ISFP-ISFJ":"Both warm and caring, they build a stable and comfortable relationship while looking after each other in their own quiet ways.",
+  "ISFP-ISTJ":"ISFP's flexibility and ISTJ's structure can complement each other well, but aligning their different lifestyles matters enormously.",
+  "ISFP-ISFP":"Two ISFPs understand each other deeply, but both avoiding conflict means honest communication requires real, conscious effort.",
+  "ISFP-ESFP":"Both enjoy the present and sensory experiences — fun times together, though intentional conversations about the future are needed.",
+  "ISFP-ISTP":"Both quiet and independent. They bond naturally through shared activities while respecting each other's personal space.",
+  "ISFP-ESTP":"ESTP's active energy and ISFP's sensitivity can create good fun together, but differences in emotional depth may surface over the long term.",
+  "ISFP-INFP":"Both sensitive but with different worldviews and communication styles — bridging NF idealism and SP realism requires understanding and patience.",
+  "ISFP-ENFP":"ENFP's energy level may overwhelm ISFP, while ISFP's quietness may frustrate ENFP. Understanding each other's natural energy rhythm is everything.",
+  "ISFP-INFJ":"Similar in appearance but very different inside. Bridging INFJ's abstract thinking and ISFP's concrete sensibility takes genuine effort.",
+  "ESFP-ISFJ":"ESFP's vibrant energy and ISFJ's warm care complement each other perfectly — ESFP brings joy; ISFJ brings stability. A natural soulmate pairing.",
+  "ESFP-ISTJ":"Complete opposites who fill each other's gaps beautifully. ESFP's flexibility and ISTJ's stability meet for a genuinely balanced relationship.",
+  "ESFP-INTJ":"Very different types who may feel a strong initial pull, but long-term lifestyle differences require careful, honest alignment.",
+  "ESFP-ENTJ":"Both energetic but pursuing different goals. Genuine mutual respect enables a balanced, rewarding relationship.",
+  "ESFP-INTP":"Polar energies that feel refreshingly novel at first, but major communication style differences require real, sustained effort.",
+  "ESFP-ENTP":"Both extroverted and active but with different core focuses. Valuing what each brings to the table creates a lively, colorful relationship.",
+  "ESFP-ESFJ":"Both warm and sociable, they naturally enjoy time with others and understand each other's social energy instinctively.",
+  "ESFP-ESTJ":"ESFP's free spirit and ESTJ's structure can genuinely balance each other out, but aligning their lifestyles requires honest conversation.",
+  "ESFP-ISFP":"Both sensory and present-focused — fun times together naturally, but growth requires conscious and deliberate effort.",
+  "ESFP-ESFP":"Two ESFPs together: full of fun and spontaneity, but handling real-world challenges together can be genuinely difficult.",
+  "ESFP-ISTP":"Both flexible and present-oriented, but different in emotional expression. Understanding each other's communication style matters most.",
+  "ESFP-ESTP":"Both energetic and full of adventure. Deep emotional connection, however, requires deliberate and conscious effort from both.",
+  "ESFP-INFP":"Both emotionally oriented but very different in energy and communication style. ESFP's activity level may feel genuinely overwhelming to INFP.",
+  "ESFP-ENFP":"Both extroverted but different in depth and core interests. Surface compatibility may not translate naturally to deeper connection.",
+  "ESFP-INFJ":"Very different types — INFJ's depth and ESFP's present-focus often conflict. Real mutual understanding takes substantial time and genuine patience.",
+  "ESFP-ENFJ":"ENFJ's dedicated depth and ESFP's free spirit can collide. Recognizing each other's genuine values and finding real compromise is the key.",
+  "ISTP-ESFJ":"ISTP's logical independence and ESFJ's warm care fill each other's gaps perfectly — a soulmate pairing where each provides what the other truly lacks.",
+  "ISTP-ESTJ":"Both practical and efficiency-minded. ESTJ's structure and ISTP's flexible problem-solving make a genuinely great team.",
+  "ISTP-INTJ":"Both independent and logical. A naturally comfortable relationship built on mutual respect for each other's privacy and space.",
+  "ISTP-ENTJ":"ENTJ's leadership and ISTP's sharp practical skills create a naturally efficient and effective team.",
+  "ISTP-INTP":"Both logical and independent. Deep intellectual exchange alongside mutual respect for space — a naturally comfortable, rewarding relationship.",
+  "ISTP-ENTP":"Both logical and adaptable. They bond through shared problem-solving and exploring new challenges together with enthusiasm.",
+  "ISTP-ISFJ":"ISTP's independence and ISFJ's dedication can complement each other well, but differing emotional expression expectations need careful attention.",
+  "ISTP-ISTJ":"Both practical and quiet — a stable, comfortable relationship that forms naturally while each respects the other's independence.",
+  "ISTP-ISFP":"Both quiet and independent but different in how they make decisions (logic vs. feeling). Respecting each other's approach enables a genuinely comfortable relationship.",
+  "ISTP-ESFP":"ESFP's liveliness and ISTP's quietness can exchange interesting energies, but communication style differences need watching.",
+  "ISTP-ISTP":"Two ISTPs who perfectly understand each other's independence, but both poor at emotional expression — deepening the relationship requires conscious, deliberate effort.",
+  "ISTP-ESTP":"Both practical and action-oriented. They bond naturally through shared activities, but emotional communication requires deliberate effort.",
+  "ISTP-INFP":"Very different communication styles. Understanding INFP's emotional depth is genuinely challenging for ISTP — much mutual effort is required.",
+  "ISTP-ENFP":"Very different energy levels and core interests. Understanding each other's worlds requires real time, patience, and genuine openness.",
+  "ISTP-INFJ":"Both introverted but with very different communication styles and values. Understanding each other requires conscious, sustained effort.",
+  "ISTP-ENFJ":"Very different types — ENFJ's emotional approach and ISTP's logical approach often clash directly. Learning to speak each other's language is the essential key.",
+  "ESTP-ISFJ":"ESTP's boldness and ISFJ's warmth and stability complement each other as soulmates — ESTP brings new experiences; ISFJ provides a warm, grounding home base.",
+  "ESTP-ISTJ":"Both practical and realistic. ESTP's adventurousness adds welcome vitality to ISTJ's life; ISTJ's stability gives ESTP a solid, reliable foundation.",
+  "ESTP-INTJ":"Action-first ESTP and strategist INTJ approach the world differently. That contrast, harnessed well, creates genuine team synergy.",
+  "ESTP-ENTJ":"Both decisive and driven. Fast-moving and dynamic together — aligning ENTJ's long-term vision with ESTP's spontaneity is the key challenge.",
+  "ESTP-INTP":"ESTP's momentum and INTP's analysis make an interesting complement. Understanding their natural difference in pace is the critical factor.",
+  "ESTP-ENTP":"Both energetic and eager to try new things — dynamic together, but meaningful emotional exchange requires real, deliberate effort.",
+  "ESTP-ESFJ":"Both sociable and active but pursuing genuinely different values. ESTP values freedom; ESFJ values harmony — conscious balance is needed.",
+  "ESTP-ESTJ":"Both practical and action-oriented but different in style (freedom vs. structure). Mutual respect enables efficient, productive teamwork.",
+  "ESTP-ISFP":"ESTP's active energy and ISFP's sensitivity can be genuinely fun, but differences in emotional depth may emerge meaningfully over the long term.",
+  "ESTP-ESFP":"Both present-focused and active — full of adventure together, but intentional conversations about the future are necessary.",
+  "ESTP-ISTP":"Both practical and logical. They bond naturally through shared activities and problem-solving.",
+  "ESTP-ESTP":"Two ESTPs full of adventure and energy — great fun together, but deeper emotional connection requires real, conscious effort.",
+  "ESTP-INFP":"Very different worldviews and communication styles. Maintaining the relationship requires substantial, sustained effort from both sides.",
+  "ESTP-ENFP":"Both extroverted but different in depth and core interests. Surface compatibility may not translate naturally to a deeper connection.",
+  "ESTP-INFJ":"Complete opposites — INFJ's intuitive depth and ESTP's present-focused action often conflict directly. Real mutual understanding takes substantial time.",
+  "ESTP-ENFJ":"ENFJ's emotional depth and ESTP's free-spirited action can collide. Genuinely respecting each other's core values is the essential key.",
+  "ISFJ-ESFP":"ISFJ's warm stability and ESFP's joyful energy are a soulmate pairing — ESFP brings adventure and laughter; ISFJ provides warmth and a safe home.",
+  "ISFJ-ESTP":"ISFJ's dedication and ESTP's bold energy are a natural soulmate match — ESTP opens new worlds; ISFJ provides a warm, grounding haven.",
+  "ISFJ-ISFJ":"Two ISFJs deeply understand each other's dedication and warmth — a stable, harmonious relationship forms naturally, though embracing change together takes conscious effort.",
+  "ISFJ-ESFJ":"Both warm and caring, they naturally look after each other and share core values centered on harmony, tradition, and belonging.",
+  "ISFJ-ISTJ":"Both responsible and reliable, a stable and trustworthy relationship forms naturally. They deeply value each other's diligence and commitment.",
+  "ISFJ-ESTJ":"ISFJ's warmth and ESTJ's structure create a stable yet organized relationship. They complement each other as solid, reliable partners.",
+  "ISFJ-ISFP":"Both warm and caring, but different in decision-making style. Respecting each other's approach enables a genuinely comfortable relationship.",
+  "ISFJ-ISTP":"ISFJ's warmth and ISTP's independence can complement each other, but differing emotional expression expectations need careful, honest attention.",
+  "ISFJ-INTJ":"ISFJ's preference for tradition and INTJ's drive for innovation can create real friction. Each genuinely valuing the other's strengths is the relationship's essential core.",
+  "ISFJ-ENTJ":"ISFJ's stability-seeking and ENTJ's change-driving often conflict. Conscious, honest communication is what makes this relationship function.",
+  "ISFJ-INTP":"Very different communication styles. Bridging ISFJ's emotional approach and INTP's logical one takes real, sustained effort from both.",
+  "ISFJ-ENTP":"Very different personalities. Building genuine mutual understanding requires substantial time and consistent effort.",
+  "ISFJ-INFP":"Similar on the surface but with genuinely different inner priorities. Bridging NF idealism and SJ realism requires real mutual understanding.",
+  "ISFJ-ENFP":"ENFP's free energy and ISFJ's stability-seeking often collide. Consciously matching pace and communication style is essential.",
+  "ISFJ-INFJ":"Similar in appearance but with a fundamental thinking style difference. The intuition-vs.-sensing gap requires genuine effort to bridge.",
+  "ISFJ-ENFJ":"Both deeply caring but different in energy level and approach. ENFJ's active leadership style can feel like too much pressure for ISFJ.",
+  "ESFJ-ISFP":"ESFJ's warm care and ISFP's delicate sensitivity create an embracing, beautiful relationship — a genuinely harmonious soulmate match.",
+  "ESFJ-ISTP":"ESFJ's warmth and sociability and ISTP's independent, practical charm fill each other's gaps perfectly — a natural soulmate pairing.",
+  "ESFJ-ISFJ":"Both warm and dedicated, they naturally look after each other and share values centered on harmony, stability, and togetherness.",
+  "ESFJ-ESFJ":"Two ESFJs deeply understand each other's warmth and sociability. Together they create harmony for everyone around them, though yielding during conflict can be genuinely hard.",
+  "ESFJ-ISTJ":"Both valuing tradition and stability, they build a trustworthy, reliable partnership. They deeply respect each other's dedication and sense of responsibility.",
+  "ESFJ-ESTJ":"Both organized and sociable, they build an active, stable relationship grounded in genuine shared values.",
+  "ESFJ-ESFP":"Both sociable and warm — they enjoy time with others naturally and understand each other's social energy instinctively.",
+  "ESFJ-ESTP":"Sociable in common but genuinely different in values. Understanding and aligning those differences enables a balanced, rewarding relationship.",
+  "ESFJ-INTJ":"Emotion meets logic; tradition meets innovation. The values gap is wide, but genuine mutual respect enables real learning from each other.",
+  "ESFJ-ENTJ":"Both sociable and organized but with genuinely different priorities. ESFJ values harmony; ENTJ values efficiency — understanding this gap is essential.",
+  "ESFJ-INTP":"Very different communication styles. Closing the gap between emotional and logical approaches takes real, sustained mutual effort.",
+  "ESFJ-ENTP":"Sociable in common, but very different in conversation depth and core values. Genuine effort to understand each other is the only real path forward.",
+  "ESFJ-INFP":"Both emotionally oriented but with major differences in communication style and values. INFP's idealism and ESFJ's realism can genuinely conflict.",
+  "ESFJ-ENFP":"Both sociable, but ENFP's free spirit and ESFJ's structure-seeking often create friction. Genuinely respecting each other's style is what matters most.",
+  "ESFJ-INFJ":"Similar in appearance but with a fundamental thinking style difference (sensing vs. intuition). Understanding each other's underlying perspectives takes real effort.",
+  "ESFJ-ENFJ":"Both warm and sociable but different in leadership style and approach. Respecting each other's territory enables a genuinely good relationship.",
+  "ISTJ-ESFP":"ISTJ's stability and ESFP's vibrant energy fill each other's gaps beautifully — a soulmate pairing of balance and genuine everyday joy.",
+  "ISTJ-ESTP":"Both practical and realistic. ESTP's adventurousness adds real vitality to ISTJ's daily life; ISTJ's stability gives ESTP a solid, grounding foundation.",
+  "ISTJ-ISFJ":"Both responsible and dedicated — a stable, trustworthy relationship forms naturally. They deeply value each other's diligence and reliability.",
+  "ISTJ-ESFJ":"Sharing values centered on tradition and togetherness, they build a stable relationship with genuine mutual understanding and deep respect.",
+  "ISTJ-ISTJ":"Two ISTJs perfectly understand each other's structure and reliability — stable and predictable, but embracing flexibility together takes conscious effort.",
+  "ISTJ-ESTJ":"Both responsible and structured, they build an efficient, stable relationship with a strong foundation of shared values and mutual respect.",
+  "ISTJ-ISFP":"ISTJ's structure and ISFP's flexibility can genuinely complement each other, but aligning their different lifestyles is critically important.",
+  "ISTJ-ISTP":"Both practical and independent — a stable, comfortable relationship forms naturally as they respect each other's personal space.",
+  "ISTJ-INTJ":"Both systematic but different — ISTJ prefers the proven while INTJ prefers innovation. Understanding each other's approach without forcing change is key.",
+  "ISTJ-ENTJ":"Both goal-oriented and systematic but with different attitudes toward change. Respecting each other's methods enables an efficient, forward-moving partnership.",
+  "ISTJ-INTP":"Both logical but applied differently. Accepting each other's distinct approach enables a genuinely stable relationship.",
+  "ISTJ-ENTP":"Innovation meets tradition — can genuinely conflict, but recognizing each other's real strengths enables a surprisingly complementary relationship.",
+  "ISTJ-INFP":"Pragmatism meets idealism. Major differences in values and communication style require substantial effort for real mutual understanding.",
+  "ISTJ-ENFP":"Very different energies and core values. ENFP's freedom and ISTJ's structure often clash — significant alignment work is needed.",
+  "ISTJ-INFJ":"Similar on the surface but with a fundamental difference in thinking style. Bridging the intuition-vs.-sensing gap takes real, sustained effort.",
+  "ISTJ-ENFJ":"Different leadership styles and communication approaches. Genuinely respecting each other's values enables a surprisingly complementary relationship.",
+  "ESTJ-INTP":"ESTJ's execution and INTP's theoretical depth generate amazing synergy — a soulmate pairing where ESTJ provides structure and INTP delivers innovation.",
+  "ESTJ-ISFP":"Though very different, ESTJ's stability and ISFP's sensitivity complement each other for a warm, genuinely balanced relationship.",
+  "ESTJ-ISTP":"Both practical and logical. ESTJ's structure and ISTP's flexible problem-solving skills make for a naturally efficient partnership.",
+  "ESTJ-ISFJ":"Both valuing tradition and stability, they deeply respect each other's dedication and sense of responsibility — a reliably trustworthy relationship.",
+  "ESTJ-ESFJ":"Both organized and sociable, they build an active, stable relationship grounded in shared values and genuine mutual respect.",
+  "ESTJ-ISTJ":"Both responsible and structured — an efficient, stable relationship built on a strong, shared foundation of values and reliability.",
+  "ESTJ-ESTJ":"Two ESTJs who understand each other's structure and decisiveness. Effective partners, but both tending to hold their ground requires real flexibility.",
+  "ESTJ-ESFP":"ESTJ's structure and ESFP's free spirit can genuinely balance each other, but honest lifestyle alignment conversations are necessary.",
+  "ESTJ-ESTP":"Both practical and action-oriented but different in style (structure vs. freedom). Mutual respect enables efficient and productive teamwork.",
+  "ESTJ-INTJ":"Both goal-focused but with different methodologies. ESTJ prefers the proven; INTJ prefers the innovative — honest alignment needed.",
+  "ESTJ-ENTJ":"Both decisive and organized, but both tending to hold their ground means genuine flexibility is required from each side.",
+  "ESTJ-ENTP":"Logical commonality exists, but proven methods vs. new possibilities creates real friction. Genuine mutual respect is the most important foundation.",
+  "ESTJ-INFP":"An extreme meeting of pragmatism and idealism. Very major differences in values and communication style require sustained, substantial effort.",
+  "ESTJ-ENFP":"ENFP's free spirit and ESTJ's structure conflict strongly. Genuinely accepting each other's core values is the essential first step.",
+  "ESTJ-INFJ":"Realism meets idealism — fundamental differences in values and communication style are significant. Much real understanding and effort is required.",
+  "ESTJ-ENFJ":"Both strong leaders but pointing in different directions. ESTJ seeks efficiency; ENFJ seeks harmony — conscious alignment is needed."
+};
+
 // ─── Type Profiles ───
 const TYPE_INFO = {
   INFP: { nick:"열정적 중재자", core:"깊은 이상주의와 섬세한 감성", pros:["탁월한 공감 능력으로 상대의 감정을 깊이 이해함","강한 내면 가치관으로 진정성 있는 관계를 추구함","창의적이고 독창적인 표현으로 관계에 깊이를 더함"], cons:["갈등 상황을 회피하는 경향이 있어 감정이 쌓일 수 있음","과도한 이상화로 현실과 기대 사이에서 실망할 수 있음"], want:["진정성 있는 감정 교류","자신의 가치관 존중","깊고 의미 있는 대화"] },
@@ -877,11 +1219,11 @@ const TYPE_INFO = {
 
 // ─── Compatibility Matrix ───
 const GRADES = {
-  best:  { level: 5, label: "천생연분", msg: "우리 궁합은 천생연분! 💙", icon: "💙", cls: "grade-best", color: "#3b82f6" },
-  good:  { level: 4, label: "발전 가능", msg: "좋은 관계로 발전 가능! 💚", icon: "💚", cls: "grade-good", color: "#166534" },
-  mid:   { level: 3, label: "반반", msg: "안 맞는 것 맞는 것, 반반! 💛", icon: "🤝", cls: "grade-mid", color: "#84cc16" },
-  low:   { level: 2, label: "좋지도 않음", msg: "최악은 아니지만 좋지도 않음 😐", icon: "😐", cls: "grade-low", color: "#eab308" },
-  worst: { level: 1, label: "다시 생각", msg: "우리 궁합 다시 생각해봐요 💔", icon: "💔", cls: "grade-worst", color: "#dc2626" }
+  best:  { level: 5, icon: "💙", cls: "grade-best",  color: "#3b82f6" },
+  good:  { level: 4, icon: "💚", cls: "grade-good",  color: "#166534" },
+  mid:   { level: 3, icon: "🤝", cls: "grade-mid",   color: "#84cc16" },
+  low:   { level: 2, icon: "😐", cls: "grade-low",   color: "#eab308" },
+  worst: { level: 1, icon: "💔", cls: "grade-worst", color: "#dc2626" }
 };
 
 // Build matrix from the provided data
@@ -1169,15 +1511,62 @@ function getGrade(a, b) {
 }
 
 function getDesc(a, b) {
-  return DESC[a + "-" + b] || DESC[b + "-" + a] || "두 유형의 조합은 서로의 차이를 이해하고 존중할 때 좋은 관계를 만들어갈 수 있습니다. 열린 마음으로 소통하며 함께 성장해보세요!";
+  const d = currentLang === 'en' ? DESC_EN : DESC;
+  return d[a + "-" + b] || d[b + "-" + a] || S().descFallback;
 }
 
 function generateDetail(a, b, gradeKey) {
-  const ia = TYPE_INFO[a] || {};
-  const ib = TYPE_INFO[b] || {};
+  const ia = TI()[a] || {};
+  const ib = TI()[b] || {};
   const isSame = a === b;
+  const isEn = currentLang === 'en';
 
-  const templates = {
+  const templates = isEn ? {
+    best: {
+      feature: isSame
+        ? `Two ${a}s (${ia.nick}) share a uniquely mirroring bond. United by ${ia.core}, you understand each other without words and continually enrich each other's world.`
+        : `${a} (${ia.nick}) and ${b} (${ib.nick}) are a perfect complement — a true match made in heaven. ${a}'s ${ia.core} and ${b}'s ${ib.core} shine brighter together, each naturally filling what the other lacks. Many feel an instant, powerful pull from the very first meeting.`,
+      pros: isSame
+        ? [`You deeply understand and resonate with each other's ${ia.pros[0]}`,`Shared values and interests keep conversation flowing endlessly`,`You discover your own strengths and growth through each other's reflection`,`As the same type, you intuitively know what the other needs`]
+        : [`${a}'s ${ia.pros[0]} becomes a steadfast support for ${b}`,`${b}'s ${ib.pros[0]} enriches ${a}'s life in meaningful ways`,`Different strengths create real synergy — together you're stronger`,`Even in conflict, deep mutual understanding leads to quick recovery`],
+      cons: isSame
+        ? [`Shared weaknesses can amplify each other's blind spots`,`Both having ${ia.cons[0]} tendencies may cause this area to become a recurring friction point`]
+        : [`${a}'s ${ia.cons[0]} tendency can sometimes leave ${b} feeling frustrated`,`${b}'s ${ib.cons[0]} pattern may take ${a} real time to fully accept`],
+      tips: [`Remember: ${a} needs ${ia.want[0]}, and ${b} needs ${ib.want[0]}`,`Even soulmates need intentional effort. Keep the relationship alive through honest conversation`,`See your differences not as flaws, but as strengths that complete each other`]
+    },
+    good: {
+      feature: isSame
+        ? `Two ${a}s (${ia.nick}) build a comfortable relationship of mutual understanding. A natural bond forms through shared values, but shared weaknesses mean conscious effort to grow is essential.`
+        : `${a} (${ia.nick}) and ${b} (${ib.nick}) strike a healthy balance of commonalities and differences — a pairing with real potential. There's plenty to learn from each other, and with intention this relationship can grow into something deeply meaningful.`,
+      pros: [`${a}'s ${ia.pros[0]} and ${b}'s ${ib.pros[0]} complement and strengthen each other`,`Different perspectives spark new ideas and broaden both of your worlds`,`The more you know each other, the deeper the respect and affection grows`],
+      cons: [`${a}'s ${ia.cons[0]} tendency and ${b}'s ${ib.cons[0]} style can sometimes clash`,`Early on, adapting to each other's communication styles takes time and patience`],
+      tips: [`Make sure ${b} gives ${a} what they need (${ia.want[0]}), and ${a} gives ${b} what they need (${ib.want[0]})`,`Finding shared interests and spending quality time together is the key to growing closer`,`In conflict, make it a habit to ask about intent first — it cuts misunderstandings quickly`]
+    },
+    mid: {
+      feature: isSame
+        ? `Two ${a}s (${ia.nick}) understand each other well but share the same weaknesses — a true 50/50. You know each other's needs, but that same familiarity can make each other's shortcomings painfully visible.`
+        : `${a} (${ia.nick}) and ${b} (${ib.nick}) are a mixed bag — some things click beautifully, others don't at all. Certain areas flow naturally, while others reveal real gaps. How much effort both invest determines how this relationship ultimately unfolds.`,
+      pros: [`In areas where you connect, you energize and inspire each other`,`The contrast between you offers real opportunities to gain new perspectives`],
+      cons: [`${a}'s ${ia.cons[0]} and ${b}'s ${ib.cons[0]} are the main sources of friction`,`Different communication styles mean the same words often land differently — misreads are easy`,`Without aligning expectations, repeated disappointments can quietly pile up`],
+      tips: [`Start by accepting your differences — practice seeing them as "different," not "wrong"`,`Honestly discuss what ${a} needs (${ia.want[0]}) versus what ${b} needs (${ib.want[0]})`,`In conflict, take a beat and let emotions settle before talking — it works better`]
+    },
+    low: {
+      feature: isSame
+        ? `Two ${a}s (${ia.nick}) understand each other, but shared weaknesses can become a recurring problem. Knowing each other too well can make each other's flaws even more visible and harder to ignore.`
+        : `${a} (${ia.nick}) and ${b} (${ib.nick}) see the world very differently, creating friction in everyday life. ${a}'s ${ia.core} and ${b}'s ${ib.core} lead to frequent clashes in core outlook. Not impossible, but it takes real, sustained effort to make it work.`,
+      pros: [`Opposite perspectives can sometimes feel refreshing and genuinely eye-opening`,`Working through this relationship makes both of you more emotionally mature`],
+      cons: [`${a}'s ${ia.cons[0]} can come across as baffling behavior to ${b}`,`${b}'s ${ib.cons[0]} tendency is a persistent source of stress for ${a}`,`A fundamental gap in communication styles means the same situation is often read completely differently`],
+      tips: [`Before assuming bad intent, remind yourself: "we just think differently"`,`${a} should consciously offer ${ib.want[0]}; ${b} should consciously offer ${ia.want[0]}`,`Set realistic expectations and talk openly about what each of you actually needs`]
+    },
+    worst: {
+      feature: isSame
+        ? `Same types usually run deep, but for ${a}, the shared ${ia.cons[0]} tendency can escalate into serious relationship problems. You may end up seeing each other's shadow side most clearly.`
+        : `${a} (${ia.nick}) and ${b} (${ib.nick}) differ fundamentally in values and communication — a genuinely difficult pairing. ${a}'s ${ia.core} and ${b}'s ${ib.core} frequently collide at a deep level, and small things can explode into big conflicts. No relationship is impossible, but this one demands more than almost any other.`,
+      pros: [`Because you're so different, you can learn strengths from each other that you'd never develop alone`,`Getting through this relationship builds a resilience that makes everything else feel manageable`],
+      cons: [`${a}'s core value (${ia.core}) and ${b}'s core value (${ib.core}) often collide head-on`,`${a}'s ${ia.cons[0]} can feel like a serious problem to ${b}`,`${b}'s ${ib.cons[0]} tendency is likely to leave ${a}'s core needs unmet`,`You're speaking different emotional languages — the same message is frequently received in a completely different way`],
+      tips: [`The most important thing is a genuine effort to understand why the other acts the way they do`,`Rather than resolving every conflict, focus on finding ways to coexist with the differences`,`Consciously focus on ${b}'s greatest strength (${ib.pros[0]}) and maintain a spirit of gratitude`,`If needed, seeking professional support like couples counseling is a wise and brave choice`]
+    }
+  } : {
     best: {
       feature: isSame
         ? `${a}(${ia.nick})끼리의 만남은 서로를 거울처럼 이해하는 특별한 관계입니다. ${ia.core}을 공유하는 두 사람은 말하지 않아도 통하는 깊은 유대감을 느끼며, 함께할수록 서로의 세계를 더욱 풍요롭게 만들어갑니다.`
@@ -1243,7 +1632,7 @@ function openDetail() {
   // Grade pill
   const pill = document.createElement("div");
   pill.className = "detail-grade-pill";
-  pill.textContent = `${grade.icon} ${grade.label}`;
+  pill.textContent = `${grade.icon} ${S().grades[gradeKey].label}`;
   pill.style.background = grade.color + "28";
   pill.style.color = isLight ? (gradeKey === "mid" ? "#5a8500" : "#a07800") : grade.color;
   pill.style.border = `1px solid ${grade.color}50`;
@@ -1257,9 +1646,9 @@ function openDetail() {
 
   // Sections
   const sections = [
-    { title: "✨ 잘 맞는 점", items: detail.pros, icon: "•" },
-    { title: "⚠️ 주의할 점", items: detail.cons, icon: "•" },
-    { title: "💡 함께 성장하는 팁", items: detail.tips, icon: "→" }
+    { title: S().detailPros, items: detail.pros, icon: "•" },
+    { title: S().detailCons, items: detail.cons, icon: "•" },
+    { title: S().detailTips, items: detail.tips, icon: "→" }
   ];
 
   sections.forEach(sec => {
@@ -1297,18 +1686,11 @@ function handleOverlayClick(e) {
 }
 
 // ─── UI Logic ───
-const traits = [
-  { a: "E", b: "I", labelA: "외향 (E)", labelB: "내향 (I)" },
-  { a: "N", b: "S", labelA: "직관 (N)", labelB: "감각 (S)" },
-  { a: "T", b: "F", labelA: "사고 (T)", labelB: "감정 (F)" },
-  { a: "J", b: "P", labelA: "판단 (J)", labelB: "인식 (P)" }
-];
-
 const state = { my: [null,null,null,null], partner: [null,null,null,null] };
 
 function buildSelector(containerId, stateKey) {
   const container = document.getElementById(containerId);
-  traits.forEach((t, i) => {
+  S().traits.forEach((t, i) => {
     const row = document.createElement("div");
     row.className = "trait-row";
 
@@ -1383,7 +1765,7 @@ function showResult() {
 
   document.getElementById("result-pair").textContent = a + "  ×  " + b;
   document.getElementById("result-icon").textContent = grade.icon;
-  document.getElementById("result-msg").textContent = grade.msg;
+  document.getElementById("result-msg").textContent = S().grades[gradeKey].msg;
   document.getElementById("result-desc").textContent = desc;
 
   // Grade dots
@@ -1403,6 +1785,8 @@ function showResult() {
   const url = new URL(location.href);
   url.searchParams.set("my", a);
   url.searchParams.set("partner", b);
+  if (currentLang !== 'ko') url.searchParams.set("lang", currentLang);
+  else url.searchParams.delete("lang");
   history.replaceState(null, "", url.toString());
 
   area.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1417,17 +1801,17 @@ function toggleRanking() {
   if (rankingOpen) {
     buildRanking();
     list.style.display = "block";
-    toggle.textContent = "📊 전체 궁합 순위 접기";
+    toggle.textContent = S().rankingClose;
   } else {
     list.style.display = "none";
-    toggle.textContent = "📊 내 MBTI 기준 전체 궁합 순위 보기";
+    toggle.textContent = S().rankingOpen;
   }
 }
 
 function closeRanking() {
   rankingOpen = false;
   document.getElementById("ranking-list").style.display = "none";
-  document.getElementById("ranking-toggle").textContent = "📊 내 MBTI 기준 전체 궁합 순위 보기";
+  document.getElementById("ranking-toggle").textContent = S().rankingOpen;
 }
 
 function buildRanking() {
@@ -1454,7 +1838,7 @@ function buildRanking() {
       const header = document.createElement("div");
       header.className = "rank-group-header";
       header.style.color = grade.color;
-      header.textContent = `${grade.icon} ${grade.label}`;
+      header.textContent = `${grade.icon} ${S().grades[item.gradeKey].label}`;
       list.appendChild(header);
     }
 
@@ -1482,7 +1866,7 @@ function buildRanking() {
 
     const badge = document.createElement("span");
     badge.className = "rank-badge";
-    badge.textContent = grade.label;
+    badge.textContent = S().grades[item.gradeKey].label;
     const isLight = item.gradeKey === "mid" || item.gradeKey === "low";
     badge.style.background = grade.color + "30";
     badge.style.color = isLight ? "#c8a800" : grade.color;
@@ -1494,7 +1878,7 @@ function buildRanking() {
 
   const hint = document.createElement("div");
   hint.className = "tap-hint";
-  hint.textContent = "탭하면 상대방 MBTI로 바로 설정됩니다";
+  hint.textContent = S().tapHint;
   list.appendChild(hint);
 }
 
@@ -1524,18 +1908,19 @@ async function shareResult() {
   const a = getMBTI("my");
   const b = getMBTI("partner");
   const gradeKey = getGrade(a, b);
-  const shareText = `MBTI 궁합 테스트 결과 🔍\n${a} × ${b} — ${GRADES[gradeKey].label}\n${shareUrl}`;
+  const gradeLabel = S().grades[gradeKey].label;
+  const shareText = S().shareTextFn(a, b, gradeLabel) + "\n" + shareUrl;
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: "MBTI 궁합 테스트", text: shareText, url: shareUrl });
+      await navigator.share({ title: S().title, text: shareText, url: shareUrl });
     } catch (e) {
       // user cancelled — do nothing
     }
   } else {
     try {
       await navigator.clipboard.writeText(shareUrl);
-      showToast("🔗 링크가 클립보드에 복사됐어요!");
+      showToast(S().toastCopied);
     } catch (e) {
       // fallback for older browsers
       const ta = document.createElement("textarea");
@@ -1546,7 +1931,7 @@ async function shareResult() {
       ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
-      showToast("🔗 링크가 클립보드에 복사됐어요!");
+      showToast(S().toastCopied);
     }
   }
 }
@@ -1572,8 +1957,67 @@ function applyMBTI(key, mbti) {
   updatePreview(key);
 }
 
+function applyLangToUI() {
+  document.documentElement.lang = S().htmlLang;
+  document.title = S().title;
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc) metaDesc.setAttribute('content', S().metaDesc);
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (S()[key] !== undefined) el.textContent = S()[key];
+  });
+  document.getElementById('btn-ko').classList.toggle('active', currentLang === 'ko');
+  document.getElementById('btn-en').classList.toggle('active', currentLang === 'en');
+  document.getElementById('btn-ko').setAttribute('aria-pressed', String(currentLang === 'ko'));
+  document.getElementById('btn-en').setAttribute('aria-pressed', String(currentLang === 'en'));
+  // Update ranking toggle text if ranking is visible
+  const toggle = document.getElementById('ranking-toggle');
+  if (toggle) toggle.textContent = rankingOpen ? S().rankingClose : S().rankingOpen;
+}
+
+function setLang(lang) {
+  if (lang === currentLang) return;
+  currentLang = lang;
+
+  // Update URL
+  const url = new URL(location.href);
+  url.searchParams.set('lang', lang);
+  history.replaceState(null, '', url.toString());
+
+  // Save selections, rebuild selectors, restore selections
+  const savedMy = [...state.my];
+  const savedPartner = [...state.partner];
+  document.getElementById('my-selector').innerHTML = '';
+  document.getElementById('partner-selector').innerHTML = '';
+  buildSelector('my-selector', 'my');
+  buildSelector('partner-selector', 'partner');
+  state.my = savedMy;
+  state.partner = savedPartner;
+  ['my', 'partner'].forEach(key => {
+    const rows = document.getElementById(key + '-selector').querySelectorAll('.trait-row');
+    rows.forEach((row, i) => {
+      row.querySelectorAll('.trait-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.textContent === state[key][i]);
+      });
+    });
+    if (state[key].every(v => v)) updatePreview(key);
+  });
+
+  applyLangToUI();
+  updateBtn();
+
+  // Re-render result if visible
+  if (document.getElementById('result-area').style.display === 'block') {
+    showResult();
+  }
+  // Rebuild ranking if open
+  if (rankingOpen) buildRanking();
+}
+
 function loadFromURL() {
   const params = new URLSearchParams(location.search);
+  const lang = params.get('lang');
+  if (lang === 'en' || lang === 'ko') currentLang = lang;
   const my = params.get("my");
   const partner = params.get("partner");
   if (my && partner && TYPES.includes(my) && TYPES.includes(partner)) {
@@ -1588,6 +2032,7 @@ function loadFromURL() {
 buildSelector("my-selector", "my");
 buildSelector("partner-selector", "partner");
 loadFromURL();
+applyLangToUI();
 </script>
 </body>
 </html>
